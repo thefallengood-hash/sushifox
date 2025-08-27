@@ -1,8 +1,8 @@
 import crypto from "crypto";
 
 export async function handler(event, context) {
-  const SECRET_KEY = "4f8e577b3787070fc92079e227d37de997b1dd12"; 
-  const MERCHANT_ACCOUNT = "freelance_user_68acde4a670e7";
+  const SECRET_KEY = "flk3409refn54t54t*FNJRET"; 
+  const MERCHANT_ACCOUNT = "test_merch_n1";
 
   let body;
   try {
@@ -49,7 +49,7 @@ export async function handler(event, context) {
   return {
     statusCode: 200,
     body: JSON.stringify({
-      merchantAccount: MERCHANT_ACCOUNT,
+      merchantAccount: test_merch_n1,
       merchantDomainName: "sushi-fox.com",
       orderReference,
       orderDate,
