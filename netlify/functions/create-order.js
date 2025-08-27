@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 export async function handler(event, context) {
   const MERCHANT_ACCOUNT = "freelance_user_68acde4a670e7";
-  const SECRET_KEY = "4f8e577b3787070fc92079e227d37de997b1dd12"; // секретный ключ
+  const MERCHANT_PASSWORD = "4f8e577b3787070fc92079e227d37de997b1dd12"; 
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
@@ -44,15 +44,17 @@ export async function handler(event, context) {
     ].join(";");
 
     const merchantSignature = crypto
-      .createHmac("sha1", SECRET_KEY)
+      .createHmac("md5", MERCHANT_PASSWORD)
       .update(signatureString)
-      .digest("base64");
+      .digest("hex");
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         merchantAccount: MERCHANT_ACCOUNT,
         merchantDomainName: MERCHANT_DOMAIN_NAME,
+        merchantAuthType: "SimpleSignature",
+        merchantPassword: MERCHANT_PASSWORD,
         orderReference,
         orderDate,
         amount,
