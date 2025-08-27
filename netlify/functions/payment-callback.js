@@ -27,7 +27,10 @@ export async function handler(event, context) {
   try {
     const data = JSON.parse(event.body);
 
-    // Проверяем подпись от WayForPay
+    // Логируем для отладки
+    console.log("Callback data received:", data);
+
+    // Проверяем подпись
     const signatureString = [
       data.merchantAccount,
       data.orderReference,
@@ -44,13 +47,16 @@ export async function handler(event, context) {
       .update(signatureString)
       .digest("base64");
 
+    console.log("Signature valid:", validSignature === data.merchantSignature);
+
     if (validSignature !== data.merchantSignature) {
+      console.error("Неверная подпись от WayForPay");
       return { statusCode: 400, body: JSON.stringify({ error: "Неверная подпись" }) };
     }
 
-    // Сохраняем заказ только если оплата прошла
+    // Пишем заказ только если оплата успешна
     if (data.transactionStatus === "Approved") {
-      await addDoc(collection(db, "orders"), {
+      const docRef = await addDoc(collection(db, "orders"), {
         orderReference: data.orderReference,
         amount: data.amount,
         currency: data.currency,
@@ -58,12 +64,16 @@ export async function handler(event, context) {
         status: "Оплачено",
         products: data.products || []
       });
+
+      console.log("Заказ добавлен в Firebase:", docRef.id);
+    } else {
+      console.log("Оплата не успешна, заказ не добавлен:", data.transactionStatus);
     }
 
     // WayForPay требует вернуть OK
     return { statusCode: 200, body: JSON.stringify({ result: "OK" }) };
   } catch (err) {
-    console.error(err);
+    console.error("Ошибка при обработке callback:", err);
     return { statusCode: 500, body: JSON.stringify({ error: "Ошибка при обработке callback" }) };
   }
 }
