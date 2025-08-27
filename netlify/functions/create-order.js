@@ -4,8 +4,24 @@ export async function handler(event, context) {
   const SECRET_KEY = "4f8e577b3787070fc92079e227d37de997b1dd12"; 
   const MERCHANT_ACCOUNT = "freelance_user_68acde4a670e7";
 
-  const body = JSON.parse(event.body);
+  let body;
+  try {
+    body = JSON.parse(event.body || "{}");
+  } catch (err) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Invalid JSON" })
+    };
+  }
+
   const { amount, products } = body;
+
+  if (!amount || !products || !Array.isArray(products) || products.length === 0) {
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Missing amount or products" })
+    };
+  }
 
   const orderReference = Date.now().toString();
   const orderDate = Math.floor(Date.now() / 1000);
