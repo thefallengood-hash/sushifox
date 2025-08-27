@@ -1,64 +1,65 @@
 import crypto from "crypto";
 
 export async function handler(event, context) {
-  const SECRET_KEY = "flk3409refn54t54t*FNJRET"; 
-  const MERCHANT_ACCOUNT = "test_merch_n1";
-
-  let body;
   try {
-    body = JSON.parse(event.body || "{}");
-  } catch (err) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Invalid JSON" })
-    };
-  }
+    const SECRET_KEY = "4f8e577b3787070fc92079e227d37de997b1dd12"; 
+    const MERCHANT_ACCOUNT = "freelance_user_68acde4a670e7";
 
-  const { amount, products } = body;
+    if (!event.body) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Нет данных в запросе" }) };
+    }
 
-  if (!amount || !products || !Array.isArray(products) || products.length === 0) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Missing amount or products" })
-    };
-  }
+    const body = JSON.parse(event.body);
+    const { amount, products } = body;
 
-  const orderReference = Date.now().toString();
-  const orderDate = Math.floor(Date.now() / 1000);
+    if (!amount || !products || !products.length) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Некорректные данные заказа" }) };
+    }
 
-  const productName = products.map(p => p.name);
-  const productPrice = products.map(p => p.price);
-  const productCount = products.map(p => p.qty);
+    const orderReference = Date.now().toString();
+    const orderDate = Math.floor(Date.now() / 1000);
 
-  const signatureString = [
-    MERCHANT_ACCOUNT,
-    "sushi-fox.com", 
-    orderReference,
-    orderDate,
-    amount,
-    "UAH",
-    productName.join(";"),
-    productCount.join(";"),
-    productPrice.join(";")
-  ].join(";");
+    // Убедимся, что все числа
+    const productName = products.map(p => p.name);
+    const productPrice = products.map(p => Number(p.price));
+    const productCount = products.map(p => Number(p.qty));
+    const totalAmount = Number(amount);
 
-  const merchantSignature = crypto.createHmac("sha1", SECRET_KEY)
-                                  .update(signatureString)
-                                  .digest("base64");
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      merchantAccount: test_merch_n1,
-      merchantDomainName: "sushi-fox.com",
+    // Формируем строку подписи
+    const signatureString = [
+      MERCHANT_ACCOUNT,
+      "sushi-fox.com", // должен совпадать с вашим доменом в WayForPay
       orderReference,
       orderDate,
-      amount,
-      currency: "UAH",
-      productName,
-      productPrice,
-      productCount,
-      merchantSignature
-    })
-  };
+      totalAmount,
+      "UAH",
+      productName.join(";"),
+      productCount.join(";"),
+      productPrice.join(";")
+    ].join(";");
+
+    const merchantSignature = crypto
+      .createHmac("sha1", SECRET_KEY)
+      .update(signatureString)
+      .digest("base64");
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        merchantAccount: MERCHANT_ACCOUNT,
+        merchantDomainName: "sushi-fox.com",
+        orderReference,
+        orderDate,
+        amount: totalAmount,
+        currency: "UAH",
+        productName,
+        productPrice,
+        productCount,
+        merchantSignature
+      })
+    };
+  } catch (err) {
+    console.error(err);
+    return { statusCode: 500, body: JSON.stringify({ error: "Ошибка сервера" }) };
+  }
 }
