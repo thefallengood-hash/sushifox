@@ -70,33 +70,12 @@ h1{margin:0;font-size:26px;letter-spacing:.5px}
 .map{overflow:hidden;border-radius:16px;box-shadow:var(--shadow);min-height:260px}
 a.link{color:var(--primary);text-decoration:none;font-weight:700}
 a.link:hover{text-decoration:underline}
-
-/* ==== слайдер ==== */
-.slider-container {
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--radius);
-  height: 250px;
-  max-width: 400px;
-  margin: 0 auto;
-}
+.slider-container { position: relative; overflow: hidden; border-radius: var(--radius); height: 250px; max-width: 400px; margin: 0 auto; }
 @media(max-width:720px){.slider-container {max-width: 90%;}}
 .slide {display: none; width:100%; height:100%;}
 .slide.active {display:block;}
 .slide img {width:100%; height:100%; object-fit:cover; border-radius: var(--radius);}
-.prev, .next {
-  cursor: pointer;
-  position: absolute;
-  top: 50%;
-  padding: 12px;
-  margin-top: -22px;
-  color: #fff;
-  font-weight: 800;
-  font-size: 22px;
-  border-radius: 0 3px 3px 0;
-  user-select: none;
-  background: rgba(0,0,0,.3);
-}
+.prev, .next { cursor: pointer; position: absolute; top: 50%; padding: 12px; margin-top: -22px; color: #fff; font-weight: 800; font-size: 22px; border-radius: 0 3px 3px 0; user-select: none; background: rgba(0,0,0,.3);}
 .next {right:0;border-radius:3px 0 0 3px;}
 .prev:hover, .next:hover {background: rgba(0,0,0,.6);}
 #thumbs img {height:60px;border-radius:10px;cursor:pointer;opacity:.6;transition:.3s;}
@@ -117,7 +96,6 @@ a.link:hover{text-decoration:underline}
 
   <div class="tabs" id="tabs"></div>
 
-  <!-- Слайдер -->
   <div class="section">
     <div id="slider" class="slider-container"></div>
     <div id="thumbs" style="display:flex;gap:6px;margin-top:6px;"></div>
@@ -127,7 +105,6 @@ a.link:hover{text-decoration:underline}
     <div id="products" class="products"></div>
   </div>
 
-  <!-- Контакты -->
   <div class="footer">
     <div class="contact-card">
       <h3>Контакты</h3>
@@ -143,7 +120,6 @@ a.link:hover{text-decoration:underline}
   </div>
 </div>
 
-<!-- Корзина -->
 <div class="cart-fab" id="openCart" title="Корзина">🛒<div class="cart-count" id="cartCount">0</div></div>
 <div class="modal" id="cartModal">
   <div class="sheet">
@@ -170,7 +146,7 @@ a.link:hover{text-decoration:underline}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAYXF7iVTnHIB67DAcoxA5dbhNSEcKrNkA",
@@ -183,57 +159,49 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* ==== СЛАЙДЕР ==== */
+/* СЛАЙДЕР */
 let slideIndexMap = {}, sliderInterval = null, activeCategory = null;
-
 function renderSlider(category, products) {
   activeCategory = category;
   const sliderEl = document.getElementById('slider');
   const thumbsEl = document.getElementById('thumbs');
   sliderEl.innerHTML = '';
   thumbsEl.innerHTML = '';
-  if (!products.length) return;
-
-  products.forEach((p, i) => {
-    const slide = document.createElement('div');
-    slide.className = 'slide' + (i === 0 ? ' active' : '');
-    slide.innerHTML = `<img src="${p.img}"/>`;
+  if(!products.length) return;
+  products.forEach((p,i)=>{
+    const slide=document.createElement('div');
+    slide.className='slide'+(i===0?' active':'');
+    slide.innerHTML=`<img src="${p.img}"/>`;
     sliderEl.appendChild(slide);
-
-    const thumb = document.createElement('img');
-    thumb.src = p.img;
-    if(i===0) thumb.classList.add('active');
-    thumb.onclick = () => { showSlide(i, category); resetInterval(category, products.length); };
+    const thumb=document.createElement('img');
+    thumb.src=p.img; if(i===0) thumb.classList.add('active');
+    thumb.onclick=()=>{ showSlide(i, category); resetInterval(category, products.length); };
     thumbsEl.appendChild(thumb);
   });
-
-  slideIndexMap[category] = 0;
+  slideIndexMap[category]=0;
   resetInterval(category, products.length);
 }
-
-function showSlide(n, category) {
-  const slides = document.querySelectorAll('.slide');
-  const thumbs = document.querySelectorAll('#thumbs img');
-  slides.forEach(s => s.classList.remove('active'));
-  thumbs.forEach(t => t.classList.remove('active'));
+function showSlide(n, category){
+  const slides=document.querySelectorAll('.slide');
+  const thumbs=document.querySelectorAll('#thumbs img');
+  slides.forEach(s=>s.classList.remove('active'));
+  thumbs.forEach(t=>t.classList.remove('active'));
   slides[n].classList.add('active');
   thumbs[n].classList.add('active');
-  slideIndexMap[category] = n;
+  slideIndexMap[category]=n;
+}
+function nextSlide(category,len){
+  let idx=slideIndexMap[category]??0;
+  idx=(idx+1)%len;
+  showSlide(idx,category);
+}
+function resetInterval(category,len){
+  if(sliderInterval) clearInterval(sliderInterval);
+  sliderInterval=setInterval(()=>nextSlide(category,len),4000);
 }
 
-function nextSlide(category, len) {
-  let idx = slideIndexMap[category] ?? 0;
-  idx = (idx + 1) % len;
-  showSlide(idx, category);
-}
-
-function resetInterval(category, len) {
-  if (sliderInterval) clearInterval(sliderInterval);
-  sliderInterval = setInterval(() => nextSlide(category, len), 4000);
-}
-
-/* ==== КАТЕГОРИИ И ТОВАРЫ ==== */
-async function loadCategories() {
+/* КАТЕГОРИИ И ТОВАРЫ */
+async function loadCategories(){
   const snapshot = await getDocs(collection(db,"products"));
   const all = snapshot.docs.map(doc=>doc.data());
   const categories=[...new Set(all.map(p=>p.category))];
@@ -244,42 +212,27 @@ async function loadCategories() {
   });
   if(categories.length) showTab(categories[0]);
 }
-
 async function showTab(category){
   document.querySelectorAll('.tab').forEach(el=>el.classList.toggle('active',el.textContent===category));
   const q=query(collection(db,"products"),where("category","==",category));
   const snapshot=await getDocs(q);
   const products=snapshot.docs.map(doc=>doc.data());
   renderSlider(category,products);
-
   const prodEl=document.getElementById('products'); prodEl.innerHTML='';
   products.forEach(p=>{
     const c=document.createElement('div'); c.className='card';
-    c.innerHTML=`
-      <img src="${p.img}" class="card-img"/>
-      <div class="card-body">
-        <div class="card-title">${p.name}</div>
-        <div class="card-desc">${p.desc}</div>
-        <div class="card-row">
-          <div class="price">${p.price}₴</div>
-          <button class="btn">В корзину</button>
-        </div>
-      </div>`;
+    c.innerHTML=`<img src="${p.img}" class="card-img"/><div class="card-body"><div class="card-title">${p.name}</div><div class="card-desc">${p.desc}</div><div class="card-row"><div class="price">${p.price}₴</div><button class="btn">В корзину</button></div></div>`;
     c.querySelector('.btn').onclick=()=>addToCart(p);
     prodEl.appendChild(c);
   });
 }
 
-/* ==== КОРЗИНА ==== */
-let cart=[]; 
+/* КОРЗИНА */
+let cart=[];
 function addToCart(item){const f=cart.find(c=>c.name===item.name); f?f.qty++:cart.push({...item,qty:1});updateCart();}
 function updateCart(){const listEl=document.getElementById('cartList'); listEl.innerHTML=''; cart.forEach((c,i)=>{
   const div=document.createElement('div'); div.className='cart-item';
-  div.innerHTML=`<img src="${c.img}"/><div>${c.name}</div>
-    <div class="qty"><button class="icon-btn" onclick="changeQty(${i},-1)">-</button>
-    <span>${c.qty}</span><button class="icon-btn" onclick="changeQty(${i},1)">+</button></div>
-    <div class="price">${c.price*c.qty}₴</div>
-    <button class="icon-btn remove" onclick="removeItem(${i})">✕</button>`;
+  div.innerHTML=`<img src="${c.img}"/><div>${c.name}</div><div class="qty"><button class="icon-btn" onclick="changeQty(${i},-1)">-</button><span>${c.qty}</span><button class="icon-btn" onclick="changeQty(${i},1)">+</button></div><div class="price">${c.price*c.qty}₴</div><button class="icon-btn remove" onclick="removeItem(${i})">✕</button>`;
   listEl.appendChild(div);
 });
 const total=cart.reduce((a,c)=>a+c.price*c.qty,0);
@@ -290,92 +243,60 @@ window.removeItem=(i)=>{cart.splice(i,1);updateCart();}
 document.getElementById('openCart').onclick=()=>document.getElementById('cartModal').classList.add('open');
 document.getElementById('closeCart').onclick=()=>document.getElementById('cartModal').classList.remove('open');
 
-/* ==== ОФОРМЛЕНИЕ ЗАКАЗА WAYFORPAY (через Netlify Function) ==== */
+/* ОФОРМЛЕНИЕ ЗАКАЗА WAYFORPAY */
 document.getElementById('checkoutOrder').onclick = async () => {
-  if (!cart.length) { alert('Корзина пуста'); return; }
-
-  const name = document.getElementById('custName').value.trim();
-  const phone = document.getElementById('custPhone').value.trim();
-  const addr = document.getElementById('custAddr').value.trim();
-  const note = document.getElementById('custNote').value.trim();
-
-  if (!name) { alert('Укажите имя'); return; }
-  if (!phone) { alert('Укажите телефон'); return; }
-
-  const total = cart.reduce((a, c) => a + c.price * c.qty, 0);
-  const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-  const orderNumber = Date.now();
+  if(!cart.length){ alert('Корзина пуста'); return;}
+  const name=document.getElementById('custName').value.trim();
+  const phone=document.getElementById('custPhone').value.trim();
+  const addr=document.getElementById('custAddr').value.trim();
+  const note=document.getElementById('custNote').value.trim();
+  if(!name){alert('Укажите имя'); return;}
+  if(!phone){alert('Укажите телефон'); return;}
+  const total=cart.reduce((a,c)=>a+c.price*c.qty,0);
+  const paymentMethod=document.querySelector('input[name="payment"]:checked').value;
+  const orderNumber=Date.now();
 
   // Сохраняем заказ в Firebase
-  try {
-    await addDoc(collection(db, 'orders'), {
+  try{
+    await addDoc(collection(db,'orders'),{
       orderNumber,
-      items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
+      items:cart.map(c=>({name:c.name,qty:c.qty,price:c.price})),
       total,
-      customer: { name, phone, addr, note },
+      customer:{name,phone,addr,note},
       paymentMethod,
-      status: "new",
-      createdAt: serverTimestamp()
+      status:"new",
+      createdAt:serverTimestamp()
     });
-  } catch(err) {
-    console.error(err);
-    alert('Ошибка при сохранении заказа');
-    return;
-  }
+  }catch(err){console.error(err);alert('Ошибка при сохранении заказа'); return;}
 
-  // Если оплата картой — вызываем Netlify Function
-  if(paymentMethod === 'wayforpay') {
-    try {
-      const res = await fetch('/.netlify/functions/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: total,
-          products: cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }))
-        })
+  if(paymentMethod==='wayforpay'){
+    try{
+      const res=await fetch('/.netlify/functions/create-order',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({amount:total,products:cart.map(c=>({name:c.name,price:c.price,qty:c.qty}))})
       });
-
       if(!res.ok) throw new Error('Create-order failed');
-
-      const data = await res.json();
-      if(!data.merchantSignature) {
-        alert('Ошибка при формировании платежа');
-        console.error(data);
-        return;
-      }
-
-      // Создаём форму для WayForPay
-      const form = document.createElement('form');
-      form.action = 'https://secure.wayforpay.com/pay';
-      form.method = 'POST';
-      form.style.display = 'none';
-
-      for(const [key, value] of Object.entries(data)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = Array.isArray(value) ? value.join(';') : value;
+      const data=await res.json();
+      if(!data.merchantSignature){alert('Ошибка при формировании платежа'); console.error(data); return;}
+      const form=document.createElement('form');
+      form.action='https://secure.wayforpay.com/pay';
+      form.method='POST'; form.style.display='none';
+      for(const [key,value] of Object.entries(data)){
+        const input=document.createElement('input'); input.type='hidden';
+        input.name=key; input.value=Array.isArray(value)?value.join(';'):value;
         form.appendChild(input);
       }
-
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-
-    } catch(e) {
-      console.error(e);
-      alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.');
-      return;
-    }
+      document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+    }catch(e){console.error(e); alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.'); return;}
   }
 
-  document.getElementById('orderResult').textContent = `Ваш заказ принят! Номер заказа: #${orderNumber}`;
-  cart = [];
-  updateCart();
-  setTimeout(() => document.getElementById('cartModal').classList.remove('open'), 3000);
+  document.getElementById('orderResult').textContent=`Ваш заказ принят! Номер заказа: #${orderNumber}`;
+  cart=[]; updateCart();
+  setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),3000);
 };
 
-/* ==== ИНИЦИАЛИЗАЦИЯ ==== */
+/* ИНИЦИАЛИЗАЦИЯ */
 loadCategories();
 </script>
 </body>
