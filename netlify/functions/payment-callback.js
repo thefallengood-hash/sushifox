@@ -10,9 +10,6 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// 🔑 Секретный ключ WayForPay
-const SECRET_KEY = "4f8e577b3787070fc92079e227d37de997b1dd12";
-
 export async function handler(event, context) {
   if (event.httpMethod !== "POST") {
     return {
@@ -23,7 +20,6 @@ export async function handler(event, context) {
 
   try {
     const body = JSON.parse(event.body);
-
     const {
       merchantAccount,
       orderReference,
@@ -31,7 +27,7 @@ export async function handler(event, context) {
       currency,
       transactionStatus,
       merchantSignature,
-      products
+      products = [],
     } = body;
 
     if (!merchantAccount || !orderReference || !amount || !currency || !transactionStatus) {
@@ -41,17 +37,19 @@ export async function handler(event, context) {
       };
     }
 
-    // 🔑 Генерация подписи
-    const signatureString = [
-      merchantAccount,
-      orderReference,
-      amount,
-      currency,
-      transactionStatus
-    ].join(";");
+    // 🔑 Берём секретный ключ из переменной окружения Netlify
+    const secretKey = process.env.WAYFORPAY_SECRET;
+    if (!secretKey) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: "Секретный ключ не задан" }),
+      };
+    }
 
+    // Генерация подписи SHA1
+    const signatureString = [merchantAccount, orderReference, amount, currency, transactionStatus].join(";");
     const expectedSignature = crypto
-      .createHmac("sha1", SECRET_KEY)
+      .createHmac("sha1", secretKey)
       .update(signatureString)
       .digest("base64");
 
@@ -69,8 +67,8 @@ export async function handler(event, context) {
       currency,
       date: new Date().toISOString(),
       status: "Новый",
+      products,
       paymentMethod: "Карта",
-      products: products || []
     };
 
     await db.collection("orders").doc(orderReference).set(orderData);
