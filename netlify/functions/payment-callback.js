@@ -1,10 +1,12 @@
+// functions/payment-callback.js
 import admin from "firebase-admin";
 import crypto from "crypto";
 
-// Инициализация Firebase Admin
+// Инициализация Firebase Admin через сервисный аккаунт
 if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
@@ -37,7 +39,7 @@ export async function handler(event, context) {
       };
     }
 
-    // 🔑 Берём секретный ключ из переменной окружения Netlify
+    // Секретный ключ WayForPay из env
     const secretKey = process.env.WAYFORPAY_SECRET;
     if (!secretKey) {
       return {
@@ -46,8 +48,10 @@ export async function handler(event, context) {
       };
     }
 
-    // Генерация подписи SHA1
+    // Формируем строку для подписи
     const signatureString = [merchantAccount, orderReference, amount, currency, transactionStatus].join(";");
+
+    // Генерация HMAC-SHA1 подписи в base64
     const expectedSignature = crypto
       .createHmac("sha1", secretKey)
       .update(signatureString)
@@ -60,13 +64,13 @@ export async function handler(event, context) {
       };
     }
 
-    // 🆕 Создаём заказ со статусом "Новый"
+    // Создаём заказ в Firestore
     const orderData = {
       orderId: orderReference,
       amount,
       currency,
-      date: new Date().toISOString(),
       status: "Новый",
+      date: new Date().toISOString(),
       products,
       paymentMethod: "Карта",
     };
@@ -84,4 +88,4 @@ export async function handler(event, context) {
       body: JSON.stringify({ error: "Ошибка сервера" }),
     };
   }
-}
+};
