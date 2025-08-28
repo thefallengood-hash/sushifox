@@ -1,6 +1,7 @@
 import admin from "firebase-admin";
 import crypto from "crypto";
 
+// Инициализация Firebase Admin
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -8,6 +9,9 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+
+// 🔑 Секретный ключ WayForPay
+const SECRET_KEY = "4f8e577b3787070fc92079e227d37de997b1dd12";
 
 export async function handler(event, context) {
   if (event.httpMethod !== "POST") {
@@ -27,6 +31,7 @@ export async function handler(event, context) {
       currency,
       transactionStatus,
       merchantSignature,
+      products
     } = body;
 
     if (!merchantAccount || !orderReference || !amount || !currency || !transactionStatus) {
@@ -36,18 +41,17 @@ export async function handler(event, context) {
       };
     }
 
-    // 🔑 генерируем подпись
-    const secretKey = process.env.WAYFORPAY_SECRET;
+    // 🔑 Генерация подписи
     const signatureString = [
       merchantAccount,
       orderReference,
       amount,
       currency,
-      transactionStatus,
+      transactionStatus
     ].join(";");
 
     const expectedSignature = crypto
-      .createHmac("md5", secretKey)
+      .createHmac("sha1", SECRET_KEY)
       .update(signatureString)
       .digest("base64");
 
@@ -58,7 +62,7 @@ export async function handler(event, context) {
       };
     }
 
-    // 🆕 создаём заказ со статусом "Новый"
+    // 🆕 Создаём заказ со статусом "Новый"
     const orderData = {
       orderId: orderReference,
       amount,
@@ -66,6 +70,7 @@ export async function handler(event, context) {
       date: new Date().toISOString(),
       status: "Новый",
       paymentMethod: "Карта",
+      products: products || []
     };
 
     await db.collection("orders").doc(orderReference).set(orderData);
