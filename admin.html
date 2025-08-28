@@ -1,27 +1,29 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Админка — Sushi Fox</title>
   <style>
     body { font-family: system-ui, sans-serif; background:#f8f8f8; margin:0; padding:20px; }
-    .card { max-width:1000px; margin:20px auto; background:#fff; padding:16px; border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,.06) }
+    .card { max-width:1100px; margin:20px auto; background:#fff; padding:18px; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,.06) }
     .row { display:flex; gap:8px; align-items:center; }
     input { padding:10px; border-radius:8px; border:1px solid #ddd; }
     button { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; background:#4caf50; color:#fff; font-weight:700 }
-    #filters { margin:12px 0; display:flex; gap:8px; }
-    #filters button { background:#eee; color:#000 }
+    #filters { margin:12px 0 18px 0; display:flex; gap:8px; flex-wrap:wrap; }
+    #filters button { background:#eee; color:#000; border-radius:8px; padding:6px 10px; border:none; cursor:pointer }
     #filters button.active { background:#ff5ea8; color:#fff }
-    .order { padding:10px; border-radius:8px; border:1px solid #e6e6e6; background:#fff; margin-bottom:10px; }
+    .order { padding:12px; border-radius:10px; border:1px solid #e6e6e6; background:#fff; margin-bottom:10px; }
     .order.new { border:2px solid #ff5ea8; background:#fff6fb; }
     pre { white-space:pre-wrap; margin:6px 0; }
     .actions { margin-top:8px; display:flex; gap:8px; }
-    .customer-info { display:none; margin-top:6px; padding:8px; border:1px solid #eee; border-radius:6px; background:#fafafa; font-size:14px; line-height:1.4; }
-    .toggle-btn { background:#2196f3; font-size:12px; padding:4px 8px; border-radius:6px; }
-    .tag { display:inline-block; padding:2px 8px; border-radius:12px; font-size:12px; background:#eee; color:#333; }
-    .tag.cash { background:#ffd8a8; }
-    .tag.card { background:#d0f0ff; }
+    .customer-info { display:none; margin-top:8px; padding:10px; border:1px solid #eee; border-radius:8px; background:#fafafa; font-size:14px; line-height:1.4; }
+    .toggle-btn { background:#2196f3; font-size:12px; padding:6px 10px; border-radius:8px; color:#fff; border:none; cursor:pointer }
+    .pm-badge { font-weight:700; padding:6px 8px; border-radius:8px; display:inline-block; font-size:13px; }
+    .pm-cash { background:#ff9800; color:#fff; }
+    .pm-card { background:#4caf50; color:#fff; }
+    .pm-other { background:#bdbdbd; color:#fff; }
+    .meta { color:#666; font-size:13px; }
   </style>
 </head>
 <body>
@@ -41,10 +43,14 @@
         <button data-filter="all" class="active">Все</button>
         <button data-filter="new">Новые</button>
         <button data-filter="accepted">Принятые</button>
+        <button data-filter="cash">Наличка</button>
+        <button data-filter="card">Карта</button>
       </div>
+
       <div style="margin-bottom:8px;">
         <button id="refreshBtn" style="background:#2196f3">Обновить</button>
       </div>
+
       <div id="ordersWrap"></div>
     </div>
   </div>
@@ -54,10 +60,12 @@
   </audio>
 
 <script type="module">
+/* Firebase client SDK */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, query, onSnapshot, doc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+/* Your firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyAYXF7iVTnHIB67DAcoxA5dbhNSEcKrNkA",
   authDomain: "sushi-fox-menu.firebaseapp.com",
@@ -71,6 +79,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+/* DOM */
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const authMsg = document.getElementById('authMsg');
@@ -82,6 +91,7 @@ let lastSeen = 0;
 let currentFilter = 'all';
 let unsubscribe = null;
 
+/* Auth handlers */
 loginBtn.onclick = async () => {
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
@@ -89,7 +99,6 @@ loginBtn.onclick = async () => {
   try { await signInWithEmailAndPassword(auth, email, password); }
   catch (e) { authMsg.textContent = e.message; }
 };
-
 logoutBtn.onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
@@ -106,53 +115,66 @@ onAuthStateChanged(auth, user => {
   }
 });
 
-// helper: определяем читаемую метку оплаты и css-класс
-function mapPaymentLabel(raw) {
-  const s = (raw || '').toString().toLowerCase();
-  if (!s) return { label: '', cls: '' };
-  if (s.includes('cash') || s.includes('нал')) return { label: 'Наличка', cls: 'cash' };
-  // treat card-like values as "Карта"
-  if (s.includes('card') || s.includes('кар') || s.includes('visa') || s.includes('master')) return { label: 'Карта', cls: 'card' };
-  // fallback: try to show raw but normalized
-  return { label: raw.toString(), cls: '' };
+/* --- Helpers --- */
+
+/** normalize payment method: recognizes both "cash" and "Карта" etc. */
+function normalizePaymentMethod(raw) {
+  const r = (raw ?? '').toString().trim();
+  const s = r.toLowerCase();
+  if (!s) return { id: 'unknown', label: '' };
+  if (s === 'cash' || s.includes('cash')) return { id: 'cash', label: 'Наличка' };
+  if (s === 'карта' || s.includes('кар') || s.includes('card') || s.includes('visa') || s.includes('master')) return { id: 'card', label: 'Карта' };
+  return { id: 'other', label: r };
 }
 
-// нормализация одного документа
-function normalizeDocData(data, id) {
-  // номер заказа (поддерживаем разные поля)
-  const orderNumber = data.orderNumber || data.orderId || data.orderReference || data.id || '';
-  // total
-  const total = (typeof data.total !== 'undefined') ? data.total : (typeof data.amount !== 'undefined' ? data.amount : '');
-  // items/products
-  let items = Array.isArray(data.items) ? data.items.slice() : [];
-  const productSources = ['products','cart','orderItems','items','goods'];
-  for (const key of productSources) {
-    if ((!items || !items.length) && Array.isArray(data[key]) && data[key].length) {
-      items = data[key].map(p => ({
-        name: p.name || p.title || p.productName || '',
-        qty: p.qty ?? p.quantity ?? p.count ?? 1,
-        price: p.price ?? p.unitPrice ?? p.pricePerUnit ?? 0
-      }));
-    }
+/** get timestamp ms from various fields */
+function extractTs(data) {
+  // createdAt may be Firestore Timestamp
+  if (data?.createdAt && typeof data.createdAt.toMillis === 'function') return data.createdAt.toMillis();
+  if (data?.createdAt && typeof data.createdAt === 'number') return data.createdAt;
+  if (data?.date) {
+    const t = Date.parse(data.date);
+    if (!Number.isNaN(t)) return t;
   }
-  // customer
+  // fallback to now
+  return Date.now();
+}
+
+/** Universal order normalizer */
+function normalizeOrder(raw, id) {
+  const data = raw || {};
+  const orderNumber = data.orderNumber ?? data.orderId ?? data.orderReference ?? '';
+  const total = (typeof data.total !== 'undefined') ? data.total : (typeof data.amount !== 'undefined' ? data.amount : '');
+  // items/products/cart
+  let items = [];
+  if (Array.isArray(data.items) && data.items.length) items = data.items;
+  else if (Array.isArray(data.products) && data.products.length) items = data.products;
+  else if (Array.isArray(data.cart) && data.cart.length) items = data.cart;
+  // normalize each item
+  items = items.map(p => ({
+    name: p?.name || p?.title || p?.productName || '',
+    qty: p?.qty ?? p?.quantity ?? p?.count ?? 1,
+    price: p?.price ?? p?.unitPrice ?? p?.pricePerUnit ?? 0
+  }));
+
   const customer = data.customer || data.client || {
-    name: data.name || data.clientName || '',
-    phone: data.phone || data.clientPhone || '',
-    addr: data.addr || data.address || data.deliveryAddress || '',
-    note: data.note || data.comment || data.customerNote || ''
+    name: data.name || '',
+    phone: data.phone || '',
+    addr: data.addr || data.address || '',
+    note: data.note || data.comment || ''
   };
-  // payment method raw + label
-  const paymentRaw = (data.paymentMethod || data.payment || data.method || '').toString();
-  const paymentInfo = mapPaymentLabel(paymentRaw);
-  // status normalization (рус/англ)
-  const st = (data.status || '').toString().toLowerCase();
-  let normStatus = '';
-  if (!st) normStatus = 'new';
-  else if (st.includes('нов') || st.includes('created') || st === 'new') normStatus = 'new';
-  else if (st.includes('прин') || st === 'accepted') normStatus = 'accepted';
-  else if (st.includes('опл') || st.includes('paid')) normStatus = 'paid';
-  else normStatus = st;
+
+  const pm = normalizePaymentMethod(data.paymentMethod ?? data.payment ?? data.method ?? '');
+
+  let st = (data.status ?? '').toString().toLowerCase();
+  let status = 'new';
+  if (!st) status = 'new';
+  else if (st.includes('нов') || st === 'new' || st.includes('created')) status = 'new';
+  else if (st.includes('прин') || st === 'accepted') status = 'accepted';
+  else if (st.includes('опл') || st.includes('paid')) status = 'paid';
+  else status = st;
+
+  const ts = extractTs(data);
 
   return {
     id,
@@ -161,29 +183,32 @@ function normalizeDocData(data, id) {
     total,
     items,
     customer,
-    paymentRaw,
-    paymentLabel: paymentInfo.label,
-    paymentClass: paymentInfo.cls,
-    status: normStatus
+    pmId: pm.id,
+    paymentMethodLabel: pm.label,
+    status,
+    ts
   };
 }
 
+/* --- Realtime listening (no orderBy to avoid Firestore errors on missing fields).
+     We sort client-side by timestamp so mixed documents are safe.) */
 function startRealtime() {
-  // сортируем по дате/createdAt (если у тебя разные поля, можно менять)
-  // использую 'date' как раньше, если не работает можно поменять на 'createdAt'
-  const q = query(collection(db, 'orders'), orderBy('date', 'asc'));
+  const q = query(collection(db, 'orders'));
   unsubscribe = onSnapshot(q, snapshot => {
-    allOrders = snapshot.docs.map(d => normalizeDocData(d.data(), d.id));
+    allOrders = snapshot.docs.map(d => normalizeOrder(d.data(), d.id));
+    // sort newest first
+    allOrders.sort((a,b) => (b.ts || 0) - (a.ts || 0));
     renderOrders();
+
+    // notify on added
     snapshot.docChanges().forEach(change => {
       if (change.type === 'added') {
-        const o = normalizeDocData(change.doc.data(), change.doc.id);
-        // lastSeen сравниваем по number-like или timestamp fallback
-        const num = (o.orderNumber && !isNaN(Number(o.orderNumber))) ? Number(o.orderNumber) : Date.now();
+        const o = normalizeOrder(change.doc.data(), change.doc.id);
+        const num = Number(o.orderNumber) || o.ts || Date.now();
         if (num > lastSeen) { try { notifySound.play(); } catch(e){} lastSeen = num; }
       }
     });
-  }, err => { console.error('onSnapshot error', err); });
+  }, err => console.error('onSnapshot error', err));
 }
 
 function stopRealtime() {
@@ -192,23 +217,26 @@ function stopRealtime() {
   ordersWrap.innerHTML = '';
 }
 
+/* --- Rendering with filters (status and payment-method filters) --- */
 function renderOrders() {
   ordersWrap.innerHTML = '';
   let list = allOrders.slice();
+
   if (currentFilter !== 'all') {
-    list = list.filter(o => {
-      if (!o.status) return false;
-      if (currentFilter === 'new') return o.status === 'new';
-      if (currentFilter === 'accepted') return o.status === 'accepted';
-      return o.status === currentFilter;
-    });
+    if (currentFilter === 'new' || currentFilter === 'accepted') {
+      list = list.filter(o => o.status === currentFilter);
+    } else if (currentFilter === 'cash' || currentFilter === 'card') {
+      list = list.filter(o => o.pmId === currentFilter);
+    }
   }
+
   if (!list.length) { ordersWrap.innerHTML = '<div style="padding:8px;">Нет заказов</div>'; return; }
 
   list.forEach(order => {
     const div = document.createElement('div');
     div.className = 'order' + (order.status === 'new' ? ' new' : '');
 
+    // items text
     let itemsText = '';
     (order.items || []).forEach(it => {
       const qty = it.qty ?? 1;
@@ -216,32 +244,42 @@ function renderOrders() {
       itemsText += `${it.name || '-'} x${qty} = ${price * qty}₴\n`;
     });
 
-    const totalToShow = order.total || '';
+    const totalToShow = order.total ?? '';
 
-    // payment label + tag
-    const paymentLabel = order.paymentLabel || (order.paymentRaw ? order.paymentRaw : '');
-    const tagCls = order.paymentClass ? `tag ${order.paymentClass}` : 'tag';
+    // choose badge class
+    const pmClass = order.pmId === 'cash' ? 'pm-badge pm-cash' : (order.pmId === 'card' ? 'pm-badge pm-card' : 'pm-badge pm-other');
+    const pmLabel = order.paymentMethodLabel || '';
 
     div.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div><strong>Заказ #${order.orderNumber}</strong> — ${totalToShow}₴</div>
-        <div><span class="${tagCls}">${paymentLabel}</span></div>
+        <div>
+          <strong>Заказ #${order.orderNumber || order.id}</strong>
+          <div class="meta">id: ${order.id} · ${new Date(order.ts).toLocaleString()}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:16px;"><strong>${totalToShow}₴</strong></div>
+          <div style="margin-top:6px;"><span class="${pmClass}">${pmLabel}</span></div>
+        </div>
       </div>
-      <pre>${itemsText}</pre>
+
+      <pre style="margin-top:10px;">${itemsText}</pre>
+
       <div class="customer-info">
         <strong>Имя:</strong> ${order.customer?.name || '-'}<br>
         <strong>Телефон:</strong> ${order.customer?.phone || '-'}<br>
         <strong>Адрес:</strong> ${order.customer?.addr || '-'}<br>
         <strong>Комментарий:</strong> ${order.customer?.note || '-'}
       </div>
-      <button class="toggle-btn">Развернуть</button>
-      <div class="actions"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <button class="toggle-btn">Развернуть</button>
+        <div class="actions"></div>
+      </div>
     `;
 
     const toggleBtn = div.querySelector('.toggle-btn');
     const infoDiv = div.querySelector('.customer-info');
     toggleBtn.onclick = () => {
-      if (infoDiv.style.display === 'none') { infoDiv.style.display = 'block'; toggleBtn.textContent = 'Свернуть'; }
+      if (infoDiv.style.display === 'none' || infoDiv.style.display === '') { infoDiv.style.display = 'block'; toggleBtn.textContent = 'Свернуть'; }
       else { infoDiv.style.display = 'none'; toggleBtn.textContent = 'Развернуть'; }
     };
 
@@ -258,11 +296,12 @@ function renderOrders() {
 
     const viewBtn = document.createElement('button');
     viewBtn.style.background = '#777';
+    viewBtn.style.color = '#fff';
     viewBtn.textContent = '🗂 Просмотр';
     viewBtn.onclick = () => {
       alert(
-        `Заказ #${order.orderNumber}\nСумма: ${totalToShow}₴\n` +
-        `Имя: ${order.customer?.name || '-'}\nТелефон: ${order.customer?.phone || '-'}\nАдрес: ${order.customer?.addr || '-'}\nКомментарий: ${order.customer?.note || '-'}`
+        `Заказ #${order.orderNumber || order.id}\nСумма: ${totalToShow}₴\n` +
+        `Имя: ${order.customer?.name || '-'}\nТелефон: ${order.customer?.phone || '-'}\nАдрес: ${order.customer?.addr || '-'}\nКомментарий: ${order.customer?.note || '-'}\nОплата: ${pmLabel || '-'}`
       );
     };
     actions.appendChild(viewBtn);
@@ -271,7 +310,7 @@ function renderOrders() {
   });
 }
 
-// фильтры
+/* --- Filters UI binding --- */
 document.querySelectorAll('#filters button').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('#filters button').forEach(b => b.classList.remove('active'));
@@ -281,13 +320,17 @@ document.querySelectorAll('#filters button').forEach(btn => {
   };
 });
 
-// ручной рефреш
+/* --- Manual refresh --- */
 document.getElementById('refreshBtn').onclick = async () => {
   try {
-    const snap = await getDocs(query(collection(db, 'orders'), orderBy('date', 'asc')));
-    allOrders = snap.docs.map(d => normalizeDocData(d.data(), d.id));
+    const q = query(collection(db, 'orders'));
+    const snap = await getDocs(q);
+    allOrders = snap.docs.map(d => normalizeOrder(d.data(), d.id));
+    allOrders.sort((a,b) => (b.ts || 0) - (a.ts || 0));
     renderOrders();
-  } catch (e) { alert('Ошибка при обновлении: ' + e.message); }
+  } catch (e) {
+    alert('Ошибка при обновлении: ' + e.message);
+  }
 };
 </script>
 </body>
