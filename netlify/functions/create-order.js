@@ -1,8 +1,8 @@
 import crypto from "crypto";
 
 export async function handler(event, context) {
-  const MERCHANT_ACCOUNT = "freelance_user_68acde4a670e7";
-  const MERCHANT_PASSWORD = "4f8e577b3787070fc92079e227d37de997b1dd12"; 
+  const MERCHANT_ACCOUNT = "sushi_fox_netlify_app";
+  const MERCHANT_PASSWORD = "f898a66a913cf08ce0e51cc9c14b987b2ddb304b"; 
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
