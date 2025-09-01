@@ -80,6 +80,9 @@ a.link:hover{text-decoration:underline}
 .prev:hover, .next:hover {background: rgba(0,0,0,.6);}
 #thumbs img {height:60px;border-radius:10px;cursor:pointer;opacity:.6;transition:.3s;}
 #thumbs img.active {opacity:1;box-shadow:0 0 0 2px var(--primary);}
+
+/* Мини-лайтбокс (без затемнения) */
+#miniLightboxImg{position:fixed;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;transition:transform .35s ease, opacity .25s ease;will-change:transform;z-index:1000}
 </style>
 </head>
 <body>
@@ -98,7 +101,11 @@ a.link:hover{text-decoration:underline}
 
   <div class="section">
     <div id="slider" class="slider-container"></div>
-    <div id="thumbs" style="display:flex;gap:6px;margin-top:6px;"></div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+      <button id="thumbPrev" class="btn" style="padding:4px 8px">◀</button>
+      <div id="thumbs" style="display:flex;gap:6px;overflow:hidden;"></div>
+      <button id="thumbNext" class="btn" style="padding:4px 8px">▶</button>
+    </div>
   </div>
 
   <div class="section">
@@ -171,7 +178,8 @@ function renderSlider(category, products) {
   products.forEach((p,i)=>{
     const slide=document.createElement('div');
     slide.className='slide'+(i===0?' active':'');
-    slide.innerHTML=`<img src="${p.img}"/>`;
+    // добавляем класс product-img чтобы можно было увеличивать и слайд-изображения
+    slide.innerHTML=`<img src="${p.img}" class="slide-img product-img" loading="lazy"/>`;
     sliderEl.appendChild(slide);
     const thumb=document.createElement('img');
     thumb.src=p.img; if(i===0) thumb.classList.add('active');
@@ -200,6 +208,91 @@ function resetInterval(category,len){
   sliderInterval=setInterval(()=>nextSlide(category,len),4000);
 }
 
+/* ИНИЦИАЛИЗАЦИЯ МИНИ-ЛАЙТБОКСА */
+function initProductLightbox(){
+  document.querySelectorAll('.product-img').forEach(img=>{
+    // убираем старые обработчики чтобы не навесить дубликаты
+    img.onclick = null;
+    img.addEventListener('click', ()=> openLightbox(img));
+  });
+}
+
+function openLightbox(imgEl){
+  // если уже открыт — закроем
+  if(window._miniLb){ closeLightbox(); }
+
+  const rect = imgEl.getBoundingClientRect();
+  const clone = imgEl.cloneNode();
+  clone.id = 'miniLightboxImg';
+  // начальное фиксированное позиционирование по месту оригинальной картинки
+  clone.style.position = 'fixed';
+  clone.style.top = rect.top + 'px';
+  clone.style.left = rect.left + 'px';
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.transition = 'transform .35s ease, top .35s ease, left .35s ease, width .35s ease, height .35s ease, opacity .2s ease';
+  clone.style.transformOrigin = 'center center';
+  clone.style.borderRadius = '12px';
+  clone.style.zIndex = '1000';
+  clone.style.cursor = 'pointer';
+  clone.style.objectFit = 'cover';
+
+  document.body.appendChild(clone);
+
+  // расчёт максимально допустимого увеличения (чтобы не выходило за 90% экрана)
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const maxW = vw * 0.9, maxH = vh * 0.9;
+  const calculatedScale = Math.min(1.8, maxW / rect.width, maxH / rect.height);
+
+  // центр исходного прямоугольника
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const dx = (vw / 2) - centerX;
+  const dy = (vh / 2) - centerY;
+
+  // небольшая задержка, чтобы браузер применил начальные свойства перед анимацией
+  requestAnimationFrame(() => {
+    clone.style.transform = `translate(${dx}px, ${dy}px) scale(${calculatedScale})`;
+  });
+
+  function cleanup(){
+    if(clone && clone.parentElement) clone.parentElement.removeChild(clone);
+    window._miniLb = null;
+    window.removeEventListener('keydown', keyHandler);
+    document.removeEventListener('click', outsideClickHandler);
+  }
+
+  function closeLightbox(){
+    if(!clone) return;
+    // возвращаем в исходное состояние (без translate/scale)
+    clone.style.transform = 'translate(0px, 0px) scale(1)';
+    // удаляем после окончания анимации
+    setTimeout(()=> cleanup(), 350);
+  }
+
+  function keyHandler(e){ if(e.key === 'Escape') closeLightbox(); }
+
+  // клик по клону закрывает
+  clone.addEventListener('click', closeLightbox);
+
+  // клик вне картинки тоже закрывает
+  function outsideClickHandler(e){
+    // если клик был не по самому клону — закрываем
+    if(e.target !== clone) {
+      closeLightbox();
+    }
+  }
+  // Делаем setTimeout(0), чтобы текущий клик, который открыл лайтбокс, не спровоцировал его закрытие
+  setTimeout(()=>document.addEventListener('click', outsideClickHandler), 0);
+
+  window.addEventListener('keydown', keyHandler);
+
+  // сохраняем ссылку чтобы можно было закрыть извне
+  window._miniLb = { close: closeLightbox };
+}
+
+function closeLightbox(){ if(window._miniLb) window._miniLb.close(); }
+
 /* КАТЕГОРИИ И ТОВАРЫ */
 async function loadCategories(){
   const snapshot = await getDocs(collection(db,"products"));
@@ -221,10 +314,13 @@ async function showTab(category){
   const prodEl=document.getElementById('products'); prodEl.innerHTML='';
   products.forEach(p=>{
     const c=document.createElement('div'); c.className='card';
-    c.innerHTML=`<img src="${p.img}" class="card-img"/><div class="card-body"><div class="card-title">${p.name}</div><div class="card-desc">${p.desc}</div><div class="card-row"><div class="price">${p.price}₴</div><button class="btn">В корзину</button></div></div>`;
+    c.innerHTML=`<img src="${p.img}" class="card-img product-img" loading="lazy"/><div class="card-body"><div class="card-title">${p.name}</div><div class="card-desc">${p.desc}</div><div class="card-row"><div class="price">${p.price}₴</div><button class="btn">В корзину</button></div></div>`;
     c.querySelector('.btn').onclick=()=>addToCart(p);
     prodEl.appendChild(c);
   });
+
+  // навешиваем мини-лайтбокс на только что отрисованные картинки
+  initProductLightbox();
 }
 
 /* КОРЗИНА */
@@ -237,7 +333,7 @@ function updateCart(){const listEl=document.getElementById('cartList'); listEl.i
 });
 const total=cart.reduce((a,c)=>a+c.price*c.qty,0);
 document.getElementById('cartTotal').textContent=total+'₴';
-document.getElementById('cartCount').textContent=cart.reduce((a,c)=>a+c.qty,0);}
+document.getElementById('cartCount').textContent=cart.reduce((a,c)=>a+c.qty,0);} 
 window.changeQty=(i,n)=>{cart[i].qty+=n;if(cart[i].qty<1)cart.splice(i,1);updateCart();}
 window.removeItem=(i)=>{cart.splice(i,1);updateCart();}
 document.getElementById('openCart').onclick=()=>document.getElementById('cartModal').classList.add('open');
@@ -296,8 +392,22 @@ document.getElementById('checkoutOrder').onclick = async () => {
   }catch(e){console.error(e); alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.'); return;}
 };
 
+/* ==== СВАЙП МИНИАТЮР КНОПКАМИ ==== */
+const thumbsEl = document.getElementById('thumbs');
+const thumbPrev = document.getElementById('thumbPrev');
+const thumbNext = document.getElementById('thumbNext');
+const thumbScrollAmount = 80; // сколько px прокручиваем за раз
+
+thumbPrev.onclick = () => {
+  thumbsEl.scrollBy({ left: -thumbScrollAmount, behavior: 'smooth' });
+}
+thumbNext.onclick = () => {
+  thumbsEl.scrollBy({ left: thumbScrollAmount, behavior: 'smooth' });
+}
+
 /* ИНИЦИАЛИЗАЦИЯ */
 loadCategories();
+
 </script>
 </body>
 </html>
