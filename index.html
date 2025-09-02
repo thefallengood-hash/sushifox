@@ -339,9 +339,9 @@ document.getElementById('checkoutOrder').onclick = async () => {
 
   const total = cart.reduce((a, c) => a + c.price * c.qty, 0);
   const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-  const orderNumber = Date.now(); // твой формат #timestamp
+  const orderNumber = Date.now();
 
-  // Оплата наличными
+  // Оплата наличными — сохраняем в Firestore
   if (paymentMethod === 'cash') {
     try {
       await addDoc(collection(db, 'orders'), {
@@ -367,58 +367,42 @@ document.getElementById('checkoutOrder').onclick = async () => {
 
   // Оплата картой через WayForPay
   try {
-    const productsForServer = cart.map(c => ({
-      name: c.name,
-      price: c.price,
-      qty: c.qty
-    }));
+    // Собираем продукты — price и qty уже числа (из Firebase)
+    const productsForServer = cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }));
 
-    // Отправляем все товары на сервер Netlify Function
     const res = await fetch('/.netlify/functions/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        products: productsForServer,
-        orderNumber,
-        customer: { name, phone, addr, note }
-      })
+      body: JSON.stringify({ products: productsForServer })
     });
     if (!res.ok) throw new Error('Create-order failed');
 
     const data = await res.json();
     if (!data.merchantSignature) { alert('Ошибка при формировании платежа'); console.error(data); return; }
 
-    // Формируем POST-форму для WayForPay
+    // Формируем POST-форму для WayForPay — сервер уже вернул строки, поэтому value используем как есть
     const form = document.createElement('form');
     form.action = 'https://secure.wayforpay.com/pay';
     form.method = 'POST';
     form.style.display = 'none';
 
-    // Заполняем все поля, которые вернул сервер
-    for (const [key, value] of Object.entries(data)) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value;
-      form.appendChild(input);
-    }
-
-    // Контакты покупателя
+    // Дополнительно отправим контакт покупателя (WayForPay поддерживает clientFirstName/clientPhone)
     const extras = {
       clientFirstName: name,
       clientPhone: phone,
-      clientEmail: ''
+      clientEmail: '',
+      // можно добавить serviceUrl/clientLastName если нужно
     };
-    for (const [k, v] of Object.entries(extras)) {
-      const inp = document.createElement('input');
-      inp.type = 'hidden';
-      inp.name = k;
-      inp.value = v;
-      form.appendChild(inp);
+
+    for (const [key, value] of Object.entries(data)) {
+      const input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = value; form.appendChild(input);
     }
+    for (const [k, v] of Object.entries(extras)) { const inp = document.createElement('input'); inp.type = 'hidden'; inp.name = k; inp.value = v; form.appendChild(inp); }
 
     document.body.appendChild(form);
     form.submit();
+
+    // Не чистим корзину здесь — подождём колбека от WayForPay, или решать по логике сервера
 
   } catch (e) {
     console.error(e);
@@ -426,7 +410,6 @@ document.getElementById('checkoutOrder').onclick = async () => {
     return;
   }
 };
-
 
 /* ==== СВАЙП МИНИАТЮР КНОПКАМИ ==== */
 const thumbsEl = document.getElementById('thumbs');
