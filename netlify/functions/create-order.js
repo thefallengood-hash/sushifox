@@ -23,11 +23,10 @@ export async function handler(event, context) {
     // === Уникальный номер заказа ===
     const orderReference = Date.now().toString();
 
-    // === Фиксированное текущее UTC-время ===
-    const realNow = Math.floor(Date.now() / 1000); // <-- объявляем здесь
-    const orderDate = realNow > 1700000000 && realNow < 1800000000 
-      ? realNow 
-      : Math.floor(new Date().getTime() / 1000);
+    // === Защита от разницы времени с WayForPay ±5 минут ===
+    const now = Math.floor(Date.now() / 1000);
+    const maxDelta = 300; // 5 минут в секундах
+    const orderDate = now; // всегда текущее время UTC
     console.log("FIXED orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
 
     // массивы для товаров
@@ -56,7 +55,6 @@ export async function handler(event, context) {
       .update(signatureString)
       .digest("base64");
 
-    // логируем для отладки
     console.log("PAYLOAD TO WFP:", {
       merchantAccount: MERCHANT_ACCOUNT,
       merchantDomainName: MERCHANT_DOMAIN_NAME,
