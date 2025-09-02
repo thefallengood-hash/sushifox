@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 export async function handler(event, context) {
   const MERCHANT_ACCOUNT = "sushi_fox_netlify_app";
-  const MERCHANT_PASSWORD = "f898a66a913cf08ce0e51cc9c14b987b2ddb304b"; 
+  const MERCHANT_PASSWORD = "f898a66a913cf08ce0e51cc9c14b987b2ddb304b";
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
@@ -26,12 +26,26 @@ export async function handler(event, context) {
     const orderReference = Date.now().toString();
     const orderDate = Math.floor(Date.now() / 1000);
 
-    // Собираем строки
-    const productName = products.map(p => p.name).join(";");
-    const productPrice = products.map(p => p.price).join(";");
-    const productCount = products.map(p => p.qty).join(";");
+    // Формируем массивы для WayForPay
+    const productName = products.map(p =>
+      (p.name || "").replace(/[^\wА-Яа-яЇїІіЄєҐґ\s]/g, "")
+    );
+    const productPrice = products.map(p => Number(p.price));
+    const productCount = products.map(p => Number(p.qty));
 
-    // Строка для подписи
+    // Проверка, что данные валидные
+    if (
+      productPrice.some(isNaN) ||
+      productCount.some(isNaN) ||
+      !productName.every(n => n.length > 0)
+    ) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Некорректные данные товаров" })
+      };
+    }
+
+    // Формируем строку для подписи (по документации WayForPay)
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
@@ -39,12 +53,11 @@ export async function handler(event, context) {
       orderDate,
       amount,
       "UAH",
-      productName,
-      productCount,
-      productPrice
+      productName.join(";"),
+      productCount.join(";"),
+      productPrice.join(";")
     ].join(";");
 
-    // Генерируем подпись
     const merchantSignature = crypto
       .createHmac("md5", MERCHANT_PASSWORD)
       .update(signatureString)
@@ -55,6 +68,7 @@ export async function handler(event, context) {
       body: JSON.stringify({
         merchantAccount: MERCHANT_ACCOUNT,
         merchantDomainName: MERCHANT_DOMAIN_NAME,
+        merchantAuthType: "SimpleSignature",
         orderReference,
         orderDate,
         amount,
@@ -66,7 +80,7 @@ export async function handler(event, context) {
       })
     };
   } catch (err) {
-    console.error(err);
+    console.error("Ошибка:", err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: "Ошибка при обработке заказа" })
