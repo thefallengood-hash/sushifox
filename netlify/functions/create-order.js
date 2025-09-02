@@ -26,9 +26,10 @@ export async function handler(event, context) {
     const orderReference = Date.now().toString();
     const orderDate = Math.floor(Date.now() / 1000);
 
-    const productName = products.map(p => p.name);
-    const productPrice = products.map(p => p.price);
-    const productCount = products.map(p => p.qty);
+    // Формируем строки через ; для WayForPay
+    const productName = products.map(p => p.name).join(";");
+    const productPrice = products.map(p => p.price).join(";");
+    const productCount = products.map(p => p.qty).join(";");
 
     // Формируем строку для подписи
     const signatureString = [
@@ -38,9 +39,9 @@ export async function handler(event, context) {
       orderDate,
       amount,
       "UAH",
-      productName.join(";"),
-      productCount.join(";"),
-      productPrice.join(";")
+      productName,
+      productCount,
+      productPrice
     ].join(";");
 
     const merchantSignature = crypto
@@ -48,26 +49,21 @@ export async function handler(event, context) {
       .update(signatureString)
       .digest("hex");
 
-    const paymentData = {
-      merchantAccount: MERCHANT_ACCOUNT,
-      merchantDomainName: MERCHANT_DOMAIN_NAME,
-      merchantAuthType: "SimpleSignature",
-      orderReference,
-      orderDate,
-      amount,
-      currency: "UAH",
-      productName,
-      productPrice,
-      productCount,
-      merchantSignature
-    };
-
-    // 👉 ЛОГ В КОНСОЛЬ (будет видно в Netlify Function logs или локально)
-    console.log("👉 Отправляю в WayForPay:", JSON.stringify(paymentData, null, 2));
-
     return {
       statusCode: 200,
-      body: JSON.stringify(paymentData)
+      body: JSON.stringify({
+        merchantAccount: MERCHANT_ACCOUNT,
+        merchantDomainName: MERCHANT_DOMAIN_NAME,
+        merchantAuthType: "SimpleSignature",
+        orderReference,
+        orderDate,
+        amount,
+        currency: "UAH",
+        productName,
+        productPrice,
+        productCount,
+        merchantSignature
+      })
     };
   } catch (err) {
     console.error(err);
