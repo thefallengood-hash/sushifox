@@ -16,16 +16,18 @@ export async function handler(event, context) {
       return { statusCode: 400, body: JSON.stringify({ error: "Нет товаров в заказе" }) };
     }
 
-    // Считаем сумму на сервере
-    const amount = products.reduce((sum, p) => sum + p.price * p.qty, 0);
+    // Считаем итоговую сумму
+    const amount = products.reduce((sum, p) => sum + p.price * p.qty, 0).toFixed(2);
 
-    const orderReference = `SUSHIFOX_${Date.now()}`;
-    const orderDate = Math.floor(Date.now() / 1000);
-
+    // Формируем строки для WayForPay
     const productName = products.map(p => p.name.replace(/;/g, ",")).join(";");
-    const productPrice = products.map(p => p.price).join(";");
+    const productPrice = products.map(p => Number(p.price).toFixed(2)).join(";");
     const productCount = products.map(p => p.qty).join(";");
 
+    const orderReference = Date.now().toString();
+    const orderDate = Math.floor(Date.now() / 1000);
+
+    // Формируем подпись
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
