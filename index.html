@@ -341,59 +341,95 @@ document.getElementById('closeCart').onclick=()=>document.getElementById('cartMo
 
 /* ОФОРМЛЕНИЕ ЗАКАЗА */
 document.getElementById('checkoutOrder').onclick = async () => {
-  if(!cart.length){ alert('Корзина пуста'); return;}
-  const name=document.getElementById('custName').value.trim();
-  const phone=document.getElementById('custPhone').value.trim();
-  const addr=document.getElementById('custAddr').value.trim();
-  const note=document.getElementById('custNote').value.trim();
-  if(!name){alert('Укажите имя'); return;}
-  if(!phone){alert('Укажите телефон'); return;}
-  const total=cart.reduce((a,c)=>a+c.price*c.qty,0);
-  const paymentMethod=document.querySelector('input[name="payment"]:checked').value;
-  const orderNumber=Date.now();
+  if (!cart.length) { alert('Корзина пуста'); return; }
 
-  if(paymentMethod==='cash'){
-    try{
-      await addDoc(collection(db,'orders'),{
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const addr = document.getElementById('custAddr').value.trim();
+  const note = document.getElementById('custNote').value.trim();
+
+  if (!name) { alert('Укажите имя'); return; }
+  if (!phone) { alert('Укажите телефон'); return; }
+
+  const total = cart.reduce((a, c) => a + c.price * c.qty, 0);
+  const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+  const orderNumber = Date.now();
+
+  if (paymentMethod === 'cash') {
+    try {
+      await addDoc(collection(db, 'orders'), {
         orderNumber,
-        items:cart.map(c=>({name:c.name,qty:c.qty,price:c.price})),
+        items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
         total,
-        customer:{name,phone,addr,note},
+        customer: { name, phone, addr, note },
         paymentMethod,
-        status:"new",
-        createdAt:serverTimestamp()
+        status: "new",
+        createdAt: serverTimestamp()
       });
-    }catch(err){console.error(err);alert('Ошибка при сохранении заказа'); return;}
-    document.getElementById('orderResult').textContent=`Ваш заказ принят! Номер заказа: #${orderNumber}`;
-    cart=[]; updateCart();
-    setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),3000);
+    } catch (err) {
+      console.error(err); alert('Ошибка при сохранении заказа'); return;
+    }
+    document.getElementById('orderResult').textContent = `Ваш заказ принят! Номер заказа: #${orderNumber}`;
+    cart = []; updateCart();
+    setTimeout(() => document.getElementById('cartModal').classList.remove('open'), 3000);
     return;
   }
 
   // Оплата картой через WayForPay
-  try{
-    const res=await fetch('/.netlify/functions/create-order',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({amount:total,products:cart.map(c=>({name:c.name,price:c.price,qty:c.qty}))})
+  try {
+    const res = await fetch('/.netlify/functions/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: total,
+        products: cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }))
+      })
     });
-    if(!res.ok) throw new Error('Create-order failed');
-    const data=await res.json();
-    if(!data.merchantSignature){alert('Ошибка при формировании платежа'); console.error(data); return;}
-    const form=document.createElement('form');
-    form.action='https://secure.wayforpay.com/pay';
-    form.method='POST'; form.style.display='none';
-for (const [key,value] of Object.entries(data)) {
-  const input = document.createElement('input');
-  input.type = 'hidden';
-  input.name = Array.isArray(value) ? key + '[]' : key; // 👈 важно
-  input.value = value;
-  form.appendChild(input);
-}
 
+    if (!res.ok) throw new Error('Create-order failed');
+    const data = await res.json();
 
-    document.body.appendChild(form); form.submit(); document.body.removeChild(form);
-  }catch(e){console.error(e); alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.'); return;}
+    if (!data.merchantSignature) {
+      alert('Ошибка при формировании платежа');
+      console.error(data);
+      return;
+    }
+
+    console.log("WayForPay payload:", data); // 👈 смотри в консоли что уходит
+
+    const form = document.createElement('form');
+    form.action = 'https://secure.wayforpay.com/pay';
+    form.method = 'POST';
+    form.style.display = 'none';
+
+    // Генерация инпутов для WayForPay
+    for (const [key, value] of Object.entries(data)) {
+      if (Array.isArray(value)) {
+        value.forEach(v => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key + '[]';  // 👈 ключ с [] как требует WFP
+          input.value = v;
+          form.appendChild(input);
+        });
+      } else {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+
+  } catch (e) {
+    console.error(e);
+    alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.');
+    return;
+  }
 };
 
 /* ==== СВАЙП МИНИАТЮР КНОПКАМИ ==== */
