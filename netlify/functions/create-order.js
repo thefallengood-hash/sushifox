@@ -14,17 +14,17 @@ export async function handler(event, context) {
 
   try {
     const body = JSON.parse(event.body);
-    const { amount, products } = body;
+    const { products } = body;
 
     if (!products || products.length === 0) {
       return { statusCode: 400, body: "Нет товаров в заказе" };
     }
 
-    // Уникальный номер заказа
+    // === Уникальный номер заказа ===
     const orderReference = Date.now().toString();
 
-    // === ХАК: берём правильное UTC-время, без доверия к серверу ===
-    const realNow = Math.floor(Date.now() / 1000);
+    // === Фиксированное текущее UTC-время ===
+    const realNow = Math.floor(Date.now() / 1000); // <-- объявляем здесь
     const orderDate = realNow > 1700000000 && realNow < 1800000000 
       ? realNow 
       : Math.floor(new Date().getTime() / 1000);
@@ -35,7 +35,10 @@ export async function handler(event, context) {
     const productPrice = products.map(p => p.price);
     const productCount = products.map(p => p.qty);
 
-    // строка для подписи
+    // общая сумма заказа
+    const amount = productPrice.reduce((sum, price, idx) => sum + price * productCount[idx], 0);
+
+    // === Автоматический расчёт merchantSignature ===
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
@@ -48,7 +51,6 @@ export async function handler(event, context) {
       ...productPrice
     ].join(";");
 
-    // подпись SHA1+Base64
     const merchantSignature = crypto
       .createHmac("sha1", MERCHANT_PASSWORD)
       .update(signatureString)
