@@ -384,12 +384,13 @@ document.getElementById('checkoutOrder').onclick = async () => {
     form.action='https://secure.wayforpay.com/pay';
     form.method='POST'; form.style.display='none';
 for (const [key,value] of Object.entries(data)) {
-  const input=document.createElement('input'); 
-  input.type='hidden'; 
-  input.name=key; 
-  input.value=value; // убираем join(";")
+  const input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = Array.isArray(value) ? key + '[]' : key; // 👈 важно
+  input.value = value;
   form.appendChild(input);
 }
+
 
     document.body.appendChild(form); form.submit(); document.body.removeChild(form);
   }catch(e){console.error(e); alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.'); return;}
