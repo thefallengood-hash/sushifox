@@ -6,10 +6,7 @@ export async function handler(event, context) {
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
-    return {
-      statusCode: 400,
-      body: "Нет данных в запросе"
-    };
+    return { statusCode: 400, body: "Нет данных в запросе" };
   }
 
   try {
@@ -24,21 +21,21 @@ export async function handler(event, context) {
     const orderDate = Math.floor(Date.now() / 1000);
     console.log("FIXED orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
 
-    // массивы для товаров (все элементы строки)
+    // массивы для товаров
     const productName = products.map(p => String(p.name));
-    const productPrice = products.map(p => String(p.price));
-    const productCount = products.map(p => String(p.qty));
+    const productCount = products.map(p => Number(p.qty));
+    const productPrice = products.map(p => Number(p.price));
 
     // общая сумма заказа
-    const amount = productPrice.reduce((sum, price, idx) => sum + parseInt(price) * parseInt(productCount[idx]), 0);
+    const amount = productPrice.reduce((sum, price, idx) => sum + price * productCount[idx], 0);
 
-    // формируем строку для подписи
+    // формируем строку для подписи (WayForPay требует числа для count и price)
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
       orderReference,
-      orderDate.toString(),
-      amount.toString(),
+      orderDate,
+      amount,
       "UAH",
       ...productName,
       ...productCount,
@@ -50,17 +47,6 @@ export async function handler(event, context) {
       .createHmac("sha1", MERCHANT_PASSWORD)
       .update(signatureString, "utf8")
       .digest("base64");
-
-    // 🔹 Проверка подписи перед отправкой
-    const testSignature = crypto
-      .createHmac("sha1", MERCHANT_PASSWORD)
-      .update(signatureString, "utf8")
-      .digest("base64");
-
-    if (merchantSignature !== testSignature) {
-      console.error("Ошибка проверки подписи!");
-      return { statusCode: 500, body: "Ошибка подписи заказа, проверка не пройдена" };
-    }
 
     console.log("PAYLOAD TO WFP:", {
       merchantAccount: MERCHANT_ACCOUNT,
@@ -75,6 +61,7 @@ export async function handler(event, context) {
       merchantSignature
     });
 
+    // формируем HTML форму (все значения как строки)
     const formInputs = [
       ["merchantAccount", MERCHANT_ACCOUNT],
       ["merchantDomainName", MERCHANT_DOMAIN_NAME],
@@ -83,8 +70,8 @@ export async function handler(event, context) {
       ["amount", amount],
       ["currency", "UAH"],
       ...productName.map(v => ["productName[]", v]),
-      ...productPrice.map(v => ["productPrice[]", v]),
-      ...productCount.map(v => ["productCount[]", v]),
+      ...productPrice.map(v => ["productPrice[]", v.toString()]),
+      ...productCount.map(v => ["productCount[]", v.toString()]),
       ["merchantSignature", merchantSignature]
     ]
       .map(([k, v]) => `<input type="hidden" name="${k}" value="${v}"/>`)
@@ -106,6 +93,7 @@ export async function handler(event, context) {
       headers: { "Content-Type": "text/html; charset=utf-8" },
       body: html
     };
+
   } catch (err) {
     console.error("Ошибка create-order:", err);
     return { statusCode: 500, body: "Ошибка при обработке заказа" };
