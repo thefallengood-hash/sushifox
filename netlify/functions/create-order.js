@@ -1,9 +1,10 @@
 import crypto from "crypto";
 
 export async function handler(event, context) {
+  // ✅ Данные от заказчика
   const MERCHANT_ACCOUNT = "sushi_fox_netlify_app";
-  const MERCHANT_PASSWORD = "f898a66a913cf08ce0e51cc9c14b987b2ddb304b";
-  const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
+  const MERCHANT_PASSWORD = "716ef0f96623dca2ab5c175021463a36"; // secret password
+  const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app"; // должен совпадать с зарегистрированным доменом
 
   if (!event.body) {
     return { statusCode: 400, body: "Нет данных в запросе" };
@@ -17,7 +18,10 @@ export async function handler(event, context) {
       return { statusCode: 400, body: "Нет товаров в заказе" };
     }
 
+    // === Уникальный номер заказа ===
     const orderReference = Date.now().toString();
+
+    // === Текущее время UTC ===
     const orderDate = Math.floor(Date.now() / 1000);
     console.log("FIXED orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
 
@@ -26,10 +30,10 @@ export async function handler(event, context) {
     const productCount = products.map(p => Number(p.qty));
     const productPrice = products.map(p => Number(p.price));
 
-    // общая сумма заказа
+    // общая сумма заказа (в копейках, целое число)
     const amount = productPrice.reduce((sum, price, idx) => sum + price * productCount[idx], 0);
 
-    // формируем строку для подписи (WayForPay требует числа для count и price)
+    // === Формируем строку для подписи ===
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
@@ -61,7 +65,7 @@ export async function handler(event, context) {
       merchantSignature
     });
 
-    // формируем HTML форму (все значения как строки)
+    // === HTML-форма для сабмита ===
     const formInputs = [
       ["merchantAccount", MERCHANT_ACCOUNT],
       ["merchantDomainName", MERCHANT_DOMAIN_NAME],
