@@ -26,12 +26,12 @@ export async function handler(event, context) {
     const orderReference = Date.now().toString();
     const orderDate = Math.floor(Date.now() / 1000);
 
-    // Собираем поля как строки через ";"
+    // Собираем строки
     const productName = products.map(p => p.name).join(";");
     const productPrice = products.map(p => p.price).join(";");
     const productCount = products.map(p => p.qty).join(";");
 
-    // Формируем строку для подписи
+    // Строка для подписи
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
@@ -44,6 +44,7 @@ export async function handler(event, context) {
       productPrice
     ].join(";");
 
+    // Генерируем подпись
     const merchantSignature = crypto
       .createHmac("md5", MERCHANT_PASSWORD)
       .update(signatureString)
@@ -54,7 +55,6 @@ export async function handler(event, context) {
       body: JSON.stringify({
         merchantAccount: MERCHANT_ACCOUNT,
         merchantDomainName: MERCHANT_DOMAIN_NAME,
-        merchantAuthType: "SimpleSignature",
         orderReference,
         orderDate,
         amount,
