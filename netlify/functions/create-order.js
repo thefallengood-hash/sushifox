@@ -1,8 +1,8 @@
 import crypto from "crypto";
 
-export async function handler(event) {
+export async function handler(event, context) {
   const MERCHANT_ACCOUNT = "sushi_fox_netlify_app";
-  const MERCHANT_PASSWORD = "f898a66a913cf08ce0e51cc9c14b987b2ddb304b";
+  const MERCHANT_PASSWORD = "f898a66a913cf08ce0e51cc9c14b987b2ddb304b"; 
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
@@ -16,24 +16,25 @@ export async function handler(event) {
       return { statusCode: 400, body: JSON.stringify({ error: "Нет товаров в заказе" }) };
     }
 
-    // Считаем сумму заказа на сервере
-    const amount = products.reduce((sum, p) => sum + Number(p.price) * Number(p.qty), 0).toFixed(2);
-
     const orderReference = Date.now().toString();
     const orderDate = Math.floor(Date.now() / 1000);
+
+    // Считаем общую сумму
+    const amount = products.reduce((sum, p) => sum + Number(p.price) * Number(p.qty), 0);
 
     // Форматируем товары под WayForPay
     const productName = products.map(p => p.name.replace(/;/g, ",")).join(";");
     const productPrice = products.map(p => Number(p.price).toFixed(2)).join(";");
-    const productCount = products.map(p => Number(p.qty)).join(";");
+    const productCount = products.map(p => Math.floor(Number(p.qty))).join(";"); // только целые
 
-    // Формируем сигнатуру
+    const amountStr = amount.toFixed(2);
+
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
       orderReference,
       orderDate,
-      amount,
+      amountStr,
       "UAH",
       productName,
       productCount,
@@ -53,7 +54,7 @@ export async function handler(event) {
         merchantAuthType: "SimpleSignature",
         orderReference,
         orderDate,
-        amount,
+        amount: amountStr,
         currency: "UAH",
         productName,
         productPrice,
