@@ -178,7 +178,6 @@ function renderSlider(category, products) {
   products.forEach((p,i)=>{
     const slide=document.createElement('div');
     slide.className='slide'+(i===0?' active':'');
-    // добавляем класс product-img чтобы можно было увеличивать и слайд-изображения
     slide.innerHTML=`<img src="${p.img}" class="slide-img product-img" loading="lazy"/>`;
     sliderEl.appendChild(slide);
     const thumb=document.createElement('img');
@@ -211,20 +210,17 @@ function resetInterval(category,len){
 /* ИНИЦИАЛИЗАЦИЯ МИНИ-ЛАЙТБОКСА */
 function initProductLightbox(){
   document.querySelectorAll('.product-img').forEach(img=>{
-    // убираем старые обработчики чтобы не навесить дубликаты
     img.onclick = null;
     img.addEventListener('click', ()=> openLightbox(img));
   });
 }
 
 function openLightbox(imgEl){
-  // если уже открыт — закроем
   if(window._miniLb){ closeLightbox(); }
 
   const rect = imgEl.getBoundingClientRect();
   const clone = imgEl.cloneNode();
   clone.id = 'miniLightboxImg';
-  // начальное фиксированное позиционирование по месту оригинальной картинки
   clone.style.position = 'fixed';
   clone.style.top = rect.top + 'px';
   clone.style.left = rect.left + 'px';
@@ -239,18 +235,15 @@ function openLightbox(imgEl){
 
   document.body.appendChild(clone);
 
-  // расчёт максимально допустимого увеличения (чтобы не выходило за 90% экрана)
   const vw = window.innerWidth, vh = window.innerHeight;
   const maxW = vw * 0.9, maxH = vh * 0.9;
   const calculatedScale = Math.min(1.8, maxW / rect.width, maxH / rect.height);
 
-  // центр исходного прямоугольника
   const centerX = rect.left + rect.width / 2;
   const centerY = rect.top + rect.height / 2;
   const dx = (vw / 2) - centerX;
   const dy = (vh / 2) - centerY;
 
-  // небольшая задержка, чтобы браузер применил начальные свойства перед анимацией
   requestAnimationFrame(() => {
     clone.style.transform = `translate(${dx}px, ${dy}px) scale(${calculatedScale})`;
   });
@@ -264,30 +257,23 @@ function openLightbox(imgEl){
 
   function closeLightbox(){
     if(!clone) return;
-    // возвращаем в исходное состояние (без translate/scale)
     clone.style.transform = 'translate(0px, 0px) scale(1)';
-    // удаляем после окончания анимации
     setTimeout(()=> cleanup(), 350);
   }
 
   function keyHandler(e){ if(e.key === 'Escape') closeLightbox(); }
 
-  // клик по клону закрывает
   clone.addEventListener('click', closeLightbox);
 
-  // клик вне картинки тоже закрывает
   function outsideClickHandler(e){
-    // если клик был не по самому клону — закрываем
     if(e.target !== clone) {
       closeLightbox();
     }
   }
-  // Делаем setTimeout(0), чтобы текущий клик, который открыл лайтбокс, не спровоцировал его закрытие
   setTimeout(()=>document.addEventListener('click', outsideClickHandler), 0);
 
   window.addEventListener('keydown', keyHandler);
 
-  // сохраняем ссылку чтобы можно было закрыть извне
   window._miniLb = { close: closeLightbox };
 }
 
@@ -341,55 +327,88 @@ document.getElementById('closeCart').onclick=()=>document.getElementById('cartMo
 
 /* ОФОРМЛЕНИЕ ЗАКАЗА */
 document.getElementById('checkoutOrder').onclick = async () => {
-  if(!cart.length){ alert('Корзина пуста'); return;}
-  const name=document.getElementById('custName').value.trim();
-  const phone=document.getElementById('custPhone').value.trim();
-  const addr=document.getElementById('custAddr').value.trim();
-  const note=document.getElementById('custNote').value.trim();
-  if(!name){alert('Укажите имя'); return;}
-  if(!phone){alert('Укажите телефон'); return;}
-  const total=cart.reduce((a,c)=>a+c.price*c.qty,0);
-  const paymentMethod=document.querySelector('input[name="payment"]:checked').value;
-  const orderNumber=Date.now();
+  if (!cart.length) { alert('Корзина пуста'); return; }
 
-  if(paymentMethod==='cash'){
-    try{
-      await addDoc(collection(db,'orders'),{
+  const name = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+  const addr = document.getElementById('custAddr').value.trim();
+  const note = document.getElementById('custNote').value.trim();
+
+  if (!name) { alert('Укажите имя'); return; }
+  if (!phone) { alert('Укажите телефон'); return; }
+
+  const total = cart.reduce((a, c) => a + c.price * c.qty, 0);
+  const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+  const orderNumber = Date.now();
+
+  // Оплата наличными — сохраняем в Firestore
+  if (paymentMethod === 'cash') {
+    try {
+      await addDoc(collection(db, 'orders'), {
         orderNumber,
-        items:cart.map(c=>({name:c.name,qty:c.qty,price:c.price})),
+        items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price })),
         total,
-        customer:{name,phone,addr,note},
+        customer: { name, phone, addr, note },
         paymentMethod,
-        status:"new",
-        createdAt:serverTimestamp()
+        status: "new",
+        createdAt: serverTimestamp()
       });
-    }catch(err){console.error(err);alert('Ошибка при сохранении заказа'); return;}
-    document.getElementById('orderResult').textContent=`Ваш заказ принят! Номер заказа: #${orderNumber}`;
-    cart=[]; updateCart();
-    setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),3000);
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка при сохранении заказа');
+      return;
+    }
+    document.getElementById('orderResult').textContent = `Ваш заказ принят! Номер заказа: #${orderNumber}`;
+    cart = [];
+    updateCart();
+    setTimeout(() => document.getElementById('cartModal').classList.remove('open'), 3000);
     return;
   }
 
   // Оплата картой через WayForPay
-  try{
-    const res=await fetch('/.netlify/functions/create-order',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({amount:total,products:cart.map(c=>({name:c.name,price:c.price,qty:c.qty}))})
+  try {
+    // Собираем продукты — price и qty уже числа (из Firebase)
+    const productsForServer = cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }));
+
+    const res = await fetch('/.netlify/functions/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ products: productsForServer })
     });
-    if(!res.ok) throw new Error('Create-order failed');
-    const data=await res.json();
-    if(!data.merchantSignature){alert('Ошибка при формировании платежа'); console.error(data); return;}
-    const form=document.createElement('form');
-    form.action='https://secure.wayforpay.com/pay';
-    form.method='POST'; form.style.display='none';
-    for(const [key,value] of Object.entries(data)){
-      const input=document.createElement('input'); input.type='hidden';
-      input.name=key; input.value=Array.isArray(value)?value.join(';'):value;
-      form.appendChild(input);
+    if (!res.ok) throw new Error('Create-order failed');
+
+    const data = await res.json();
+    if (!data.merchantSignature) { alert('Ошибка при формировании платежа'); console.error(data); return; }
+
+    // Формируем POST-форму для WayForPay — сервер уже вернул строки, поэтому value используем как есть
+    const form = document.createElement('form');
+    form.action = 'https://secure.wayforpay.com/pay';
+    form.method = 'POST';
+    form.style.display = 'none';
+
+    // Дополнительно отправим контакт покупателя (WayForPay поддерживает clientFirstName/clientPhone)
+    const extras = {
+      clientFirstName: name,
+      clientPhone: phone,
+      clientEmail: '',
+      // можно добавить serviceUrl/clientLastName если нужно
+    };
+
+    for (const [key, value] of Object.entries(data)) {
+      const input = document.createElement('input'); input.type = 'hidden'; input.name = key; input.value = value; form.appendChild(input);
     }
-    document.body.appendChild(form); form.submit(); document.body.removeChild(form);
-  }catch(e){console.error(e); alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.'); return;}
+    for (const [k, v] of Object.entries(extras)) { const inp = document.createElement('input'); inp.type = 'hidden'; inp.name = k; inp.value = v; form.appendChild(inp); }
+
+    document.body.appendChild(form);
+    form.submit();
+
+    // Не чистим корзину здесь — подождём колбека от WayForPay, или решать по логике сервера
+
+  } catch (e) {
+    console.error(e);
+    alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.');
+    return;
+  }
 };
 
 /* ==== СВАЙП МИНИАТЮР КНОПКАМИ ==== */
@@ -398,12 +417,8 @@ const thumbPrev = document.getElementById('thumbPrev');
 const thumbNext = document.getElementById('thumbNext');
 const thumbScrollAmount = 80; // сколько px прокручиваем за раз
 
-thumbPrev.onclick = () => {
-  thumbsEl.scrollBy({ left: -thumbScrollAmount, behavior: 'smooth' });
-}
-thumbNext.onclick = () => {
-  thumbsEl.scrollBy({ left: thumbScrollAmount, behavior: 'smooth' });
-}
+thumbPrev.onclick = () => { thumbsEl.scrollBy({ left: -thumbScrollAmount, behavior: 'smooth' }); }
+thumbNext.onclick = () => { thumbsEl.scrollBy({ left: thumbScrollAmount, behavior: 'smooth' }); }
 
 /* ИНИЦИАЛИЗАЦИЯ */
 loadCategories();
