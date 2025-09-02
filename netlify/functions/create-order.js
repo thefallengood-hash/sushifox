@@ -26,9 +26,10 @@ export async function handler(event, context) {
     const orderReference = Date.now().toString();
     const orderDate = Math.floor(Date.now() / 1000);
 
-    const productName = products.map(p => p.name);
-    const productPrice = products.map(p => p.price);
-    const productCount = products.map(p => p.qty);
+    // Собираем поля как строки через ";"
+    const productName = products.map(p => p.name).join(";");
+    const productPrice = products.map(p => p.price).join(";");
+    const productCount = products.map(p => p.qty).join(";");
 
     // Формируем строку для подписи
     const signatureString = [
@@ -38,9 +39,9 @@ export async function handler(event, context) {
       orderDate,
       amount,
       "UAH",
-      productName.join(";"),
-      productCount.join(";"),
-      productPrice.join(";")
+      productName,
+      productCount,
+      productPrice
     ].join(";");
 
     const merchantSignature = crypto
@@ -54,7 +55,6 @@ export async function handler(event, context) {
         merchantAccount: MERCHANT_ACCOUNT,
         merchantDomainName: MERCHANT_DOMAIN_NAME,
         merchantAuthType: "SimpleSignature",
-        merchantPassword: MERCHANT_PASSWORD,
         orderReference,
         orderDate,
         amount,
