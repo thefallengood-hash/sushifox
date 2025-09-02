@@ -370,11 +370,12 @@ document.getElementById('checkoutOrder').onclick = async () => {
     // Собираем продукты — price и qty уже числа (из Firebase)
     const productsForServer = cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }));
 
-    const res = await fetch('/.netlify/functions/create-order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ products: productsForServer })
-    });
+const res = await fetch('/.netlify/functions/create-order', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ products: cart })
+});
+
     if (!res.ok) throw new Error('Create-order failed');
 
     const data = await res.json();
