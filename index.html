@@ -355,6 +355,7 @@ document.getElementById('checkoutOrder').onclick = async () => {
   const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
   const orderNumber = Date.now();
 
+  // если наличные → пишем сразу в Firestore
   if (paymentMethod === 'cash') {
     try {
       await addDoc(collection(db, 'orders'), {
@@ -375,7 +376,7 @@ document.getElementById('checkoutOrder').onclick = async () => {
     return;
   }
 
-  // Оплата картой через WayForPay
+  // если оплата картой → отдаём заказ на Netlify Function
   try {
     const res = await fetch('/.netlify/functions/create-order', {
       method: 'POST',
@@ -386,51 +387,22 @@ document.getElementById('checkoutOrder').onclick = async () => {
       })
     });
 
-    if (!res.ok) throw new Error('Create-order failed');
-    const data = await res.json();
+    if (!res.ok) throw new Error("Ошибка create-order");
 
-    if (!data.merchantSignature) {
-      alert('Ошибка при формировании платежа');
-      console.error(data);
-      return;
-    }
+    // функция вернёт готовый HTML с автосабмитом
+    const html = await res.text();
 
-    console.log("WayForPay payload:", data); // 👈 смотри в консоли что уходит
-
-    const form = document.createElement('form');
-    form.action = 'https://secure.wayforpay.com/pay';
-    form.method = 'POST';
-    form.style.display = 'none';
-
-    // Генерация инпутов для WayForPay
-    for (const [key, value] of Object.entries(data)) {
-      if (Array.isArray(value)) {
-        value.forEach(v => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key + '[]';  // 👈 ключ с [] как требует WFP
-          input.value = v;
-          form.appendChild(input);
-        });
-      } else {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
-      }
-    }
-
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
+    // открываем его прямо в этом окне
+    const w = window.open("", "_self");
+    w.document.write(html);
+    w.document.close();
 
   } catch (e) {
     console.error(e);
-    alert('Не удалось инициализировать оплату. Проверьте настройки WayForPay / Netlify Function.');
-    return;
+    alert('Не удалось инициализировать оплату. Проверь настройки WayForPay / Netlify Function.');
   }
 };
+
 
 /* ==== СВАЙП МИНИАТЮР КНОПКАМИ ==== */
 const thumbsEl = document.getElementById('thumbs');
