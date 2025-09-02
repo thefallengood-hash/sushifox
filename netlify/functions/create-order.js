@@ -6,32 +6,26 @@ export async function handler(event, context) {
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: "Нет данных в запросе" })
-    };
+    return { statusCode: 400, body: JSON.stringify({ error: "Нет данных в запросе" }) };
   }
 
   try {
-    const body = JSON.parse(event.body);
-    const { amount, products } = body;
+    const { products } = JSON.parse(event.body);
 
-    if (!products || products.length === 0) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Нет товаров в заказе" })
-      };
+    if (!products || !products.length) {
+      return { statusCode: 400, body: JSON.stringify({ error: "Нет товаров в заказе" }) };
     }
 
-    const orderReference = Date.now().toString();
+    // Считаем сумму на сервере
+    const amount = products.reduce((sum, p) => sum + p.price * p.qty, 0);
+
+    const orderReference = `SUSHIFOX_${Date.now()}`;
     const orderDate = Math.floor(Date.now() / 1000);
 
-    // Формируем строки через ; для WayForPay
-    const productName = products.map(p => p.name).join(";");
+    const productName = products.map(p => p.name.replace(/;/g, ",")).join(";");
     const productPrice = products.map(p => p.price).join(";");
     const productCount = products.map(p => p.qty).join(";");
 
-    // Формируем строку для подписи
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
@@ -65,11 +59,9 @@ export async function handler(event, context) {
         merchantSignature
       })
     };
+
   } catch (err) {
     console.error(err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Ошибка при обработке заказа" })
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: "Ошибка при обработке заказа" }) };
   }
 }
