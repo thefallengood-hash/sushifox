@@ -1,10 +1,9 @@
 import crypto from "crypto";
 
 export async function handler(event, context) {
-  // ✅ Данные от заказчика
   const MERCHANT_ACCOUNT = "sushi_fox_netlify_app";
   const MERCHANT_PASSWORD = "716ef0f96623dca2ab5c175021463a36"; // secret password
-  const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app"; // должен совпадать с зарегистрированным доменом
+  const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
     return { statusCode: 400, body: "Нет данных в запросе" };
@@ -18,22 +17,21 @@ export async function handler(event, context) {
       return { statusCode: 400, body: "Нет товаров в заказе" };
     }
 
-    // === Уникальный номер заказа ===
+    // Уникальный номер заказа
     const orderReference = Date.now().toString();
-
-    // === Текущее время UTC ===
+    // Текущее время UTC
     const orderDate = Math.floor(Date.now() / 1000);
     console.log("FIXED orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
 
     // массивы для товаров
     const productName = products.map(p => String(p.name));
-    const productCount = products.map(p => Number(p.qty));
-    const productPrice = products.map(p => Number(p.price));
+    const productCount = products.map(p => Math.round(Number(p.qty)));
+    const productPrice = products.map(p => Math.round(Number(p.price)));
 
-    // общая сумма заказа (в копейках, целое число)
+    // сумма заказа
     const amount = productPrice.reduce((sum, price, idx) => sum + price * productCount[idx], 0);
 
-    // === Формируем строку для подписи ===
+    // Формируем строку для подписи
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
@@ -46,7 +44,6 @@ export async function handler(event, context) {
       ...productPrice
     ].join(";");
 
-    // подпись SHA1 + Base64
     const merchantSignature = crypto
       .createHmac("sha1", MERCHANT_PASSWORD)
       .update(signatureString, "utf8")
@@ -65,7 +62,7 @@ export async function handler(event, context) {
       merchantSignature
     });
 
-    // === HTML-форма для сабмита ===
+    // HTML форма
     const formInputs = [
       ["merchantAccount", MERCHANT_ACCOUNT],
       ["merchantDomainName", MERCHANT_DOMAIN_NAME],
@@ -77,9 +74,7 @@ export async function handler(event, context) {
       ...productPrice.map(v => ["productPrice[]", v.toString()]),
       ...productCount.map(v => ["productCount[]", v.toString()]),
       ["merchantSignature", merchantSignature]
-    ]
-      .map(([k, v]) => `<input type="hidden" name="${k}" value="${v}"/>`)
-      .join("\n");
+    ].map(([k, v]) => `<input type="hidden" name="${k}" value="${v}"/>`).join("\n");
 
     const html = `
       <html>
