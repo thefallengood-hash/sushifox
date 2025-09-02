@@ -20,17 +20,11 @@ export async function handler(event, context) {
       return { statusCode: 400, body: "Нет товаров в заказе" };
     }
 
-// всегда берём "правильное" время
-const realNow = Math.floor(Date.now() / 1000);
-
-// форсим ограничение — время не может быть больше, чем текущее UTC
-// если сервер вдруг врёт → используем fallback
 const orderDate = realNow > 1700000000 && realNow < 1800000000 
   ? realNow 
   : Math.floor(new Date().getTime() / 1000);
 
 console.log("FIXED orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
-
     // массивы для товаров
     const productName = products.map(p => p.name);
     const productPrice = products.map(p => p.price);
