@@ -21,7 +21,8 @@ export async function handler(event, context) {
     }
 
     const orderReference = Date.now().toString();
-    const orderDate = Math.floor(Date.now() / 1000);
+const orderDate = Math.floor(new Date().getTime() / 1000); 
+console.log("DEBUG orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
 
     // массивы для товаров
     const productName = products.map(p => p.name);
