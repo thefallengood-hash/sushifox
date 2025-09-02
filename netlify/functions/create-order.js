@@ -10,30 +10,27 @@ export async function handler(event, context) {
   }
 
   try {
-    const { products } = JSON.parse(event.body);
+    const { amount, products } = JSON.parse(event.body);
 
     if (!products || !products.length) {
       return { statusCode: 400, body: JSON.stringify({ error: "Нет товаров в заказе" }) };
     }
 
-    // Считаем итоговую сумму
-    const amount = products.reduce((sum, p) => sum + p.price * p.qty, 0).toFixed(2);
-
-    // Формируем строки для WayForPay
-    const productName = products.map(p => p.name.replace(/;/g, ",")).join(";");
-    const productPrice = products.map(p => Number(p.price).toFixed(2)).join(";");
-    const productCount = products.map(p => p.qty).join(";");
-
     const orderReference = Date.now().toString();
     const orderDate = Math.floor(Date.now() / 1000);
 
-    // Формируем подпись
+    // Форматируем товары под WayForPay
+    const productName = products.map(p => p.name.replace(/;/g, ",")).join(";");
+    const productPrice = products.map(p => Number(p.price).toFixed(2)).join(";");
+    const productCount = products.map(p => p.qty.toString()).join(";");
+    const amountStr = Number(amount).toFixed(2);
+
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
       orderReference,
       orderDate,
-      amount,
+      amountStr,
       "UAH",
       productName,
       productCount,
@@ -53,7 +50,7 @@ export async function handler(event, context) {
         merchantAuthType: "SimpleSignature",
         orderReference,
         orderDate,
-        amount,
+        amount: amountStr,
         currency: "UAH",
         productName,
         productPrice,
