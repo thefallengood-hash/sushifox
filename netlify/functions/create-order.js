@@ -20,40 +20,47 @@ export async function handler(event, context) {
       return { statusCode: 400, body: "Нет товаров в заказе" };
     }
 
-    // === Уникальный номер заказа ===
     const orderReference = Date.now().toString();
-
-    // === Защита от разницы времени с WayForPay ±5 минут ===
-    const now = Math.floor(Date.now() / 1000);
-    const maxDelta = 300; // 5 минут в секундах
-    const orderDate = now; // всегда текущее время UTC
+    const orderDate = Math.floor(Date.now() / 1000);
     console.log("FIXED orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
 
-    // массивы для товаров
-    const productName = products.map(p => p.name);
-    const productPrice = products.map(p => p.price);
-    const productCount = products.map(p => p.qty);
+    // массивы для товаров (все элементы строки)
+    const productName = products.map(p => String(p.name));
+    const productPrice = products.map(p => String(p.price));
+    const productCount = products.map(p => String(p.qty));
 
     // общая сумма заказа
-    const amount = productPrice.reduce((sum, price, idx) => sum + price * productCount[idx], 0);
+    const amount = productPrice.reduce((sum, price, idx) => sum + parseInt(price) * parseInt(productCount[idx]), 0);
 
-    // === Автоматический расчёт merchantSignature ===
+    // формируем строку для подписи
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
       orderReference,
-      orderDate,
-      amount,
+      orderDate.toString(),
+      amount.toString(),
       "UAH",
       ...productName,
       ...productCount,
       ...productPrice
     ].join(";");
 
+    // подпись SHA1 + Base64
     const merchantSignature = crypto
       .createHmac("sha1", MERCHANT_PASSWORD)
-      .update(signatureString)
+      .update(signatureString, "utf8")
       .digest("base64");
+
+    // 🔹 Проверка подписи перед отправкой
+    const testSignature = crypto
+      .createHmac("sha1", MERCHANT_PASSWORD)
+      .update(signatureString, "utf8")
+      .digest("base64");
+
+    if (merchantSignature !== testSignature) {
+      console.error("Ошибка проверки подписи!");
+      return { statusCode: 500, body: "Ошибка подписи заказа, проверка не пройдена" };
+    }
 
     console.log("PAYLOAD TO WFP:", {
       merchantAccount: MERCHANT_ACCOUNT,
@@ -68,7 +75,6 @@ export async function handler(event, context) {
       merchantSignature
     });
 
-    // формируем HTML форму с автосабмитом
     const formInputs = [
       ["merchantAccount", MERCHANT_ACCOUNT],
       ["merchantDomainName", MERCHANT_DOMAIN_NAME],
