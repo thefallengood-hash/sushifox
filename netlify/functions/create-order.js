@@ -6,55 +6,58 @@ export async function handler(event, context) {
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Нет данных в запросе" }) };
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Нет данных в запросе" })
+    };
   }
 
   try {
-    const { products } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+    const { amount, products } = body;
 
-    if (!products || !products.length) {
-      return { statusCode: 400, body: JSON.stringify({ error: "Нет товаров в заказе" }) };
+    if (!products || products.length === 0) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Нет товаров в заказе" })
+      };
     }
 
     const orderReference = Date.now().toString();
     const orderDate = Math.floor(Date.now() / 1000);
 
-    // Считаем общую сумму
-    const amount = products.reduce((sum, p) => sum + Number(p.price) * Number(p.qty), 0);
+    // Собираем строки
+    const productName = products.map(p => p.name).join(";");
+    const productPrice = products.map(p => p.price).join(";");
+    const productCount = products.map(p => p.qty).join(";");
 
-    // Форматируем товары под WayForPay
-    const productName = products.map(p => p.name.replace(/;/g, ",")).join(";");
-    const productPrice = products.map(p => Number(p.price).toFixed(2)).join(";");
-    const productCount = products.map(p => Math.floor(Number(p.qty))).join(";"); // только целые
-
-    const amountStr = amount.toFixed(2);
-
+    // Строка для подписи
     const signatureString = [
       MERCHANT_ACCOUNT,
       MERCHANT_DOMAIN_NAME,
       orderReference,
       orderDate,
-      amountStr,
+      amount,
       "UAH",
       productName,
       productCount,
       productPrice
     ].join(";");
 
-    const merchantSignature = crypto
-      .createHmac("md5", MERCHANT_PASSWORD)
-      .update(signatureString)
-      .digest("hex");
+// Вместо md5 + hex делаем sha1 + base64
+const merchantSignature = crypto
+  .createHmac("sha1", MERCHANT_PASSWORD)
+  .update(signatureString)
+  .digest("base64");
 
     return {
       statusCode: 200,
       body: JSON.stringify({
         merchantAccount: MERCHANT_ACCOUNT,
         merchantDomainName: MERCHANT_DOMAIN_NAME,
-        merchantAuthType: "SimpleSignature",
         orderReference,
         orderDate,
-        amount: amountStr,
+        amount,
         currency: "UAH",
         productName,
         productPrice,
@@ -62,9 +65,11 @@ export async function handler(event, context) {
         merchantSignature
       })
     };
-
   } catch (err) {
     console.error(err);
-    return { statusCode: 500, body: JSON.stringify({ error: "Ошибка при обработке заказа" }) };
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Ошибка при обработке заказа" })
+    };
   }
 }
