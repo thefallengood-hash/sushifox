@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 export async function handler(event, context) {
   const MERCHANT_ACCOUNT = "sushi_fox_netlify_app";
-  const MERCHANT_PASSWORD = "716ef0f96623dca2ab5c175021463a36"; // secret password
+  const MERCHANT_PASSWORD = "f898a66a913cf08ce0e51cc9c14b987b2ddb304b"; // твой секрет
   const MERCHANT_DOMAIN_NAME = "sushi-fox.netlify.app";
 
   if (!event.body) {
@@ -17,18 +17,13 @@ export async function handler(event, context) {
       return { statusCode: 400, body: "Нет товаров в заказе" };
     }
 
-    // Уникальный номер заказа
     const orderReference = Date.now().toString();
-    // Текущее время UTC
     const orderDate = Math.floor(Date.now() / 1000);
-    console.log("FIXED orderDate:", orderDate, "UTC:", new Date(orderDate * 1000).toISOString());
 
-    // массивы для товаров
     const productName = products.map(p => String(p.name));
     const productCount = products.map(p => Math.round(Number(p.qty)));
     const productPrice = products.map(p => Math.round(Number(p.price)));
 
-    // сумма заказа
     const amount = productPrice.reduce((sum, price, idx) => sum + price * productCount[idx], 0);
 
     // Формируем строку для подписи
@@ -44,8 +39,9 @@ export async function handler(event, context) {
       ...productPrice
     ].join(";");
 
+    // Важно: HMAC-MD5 + base64
     const merchantSignature = crypto
-      .createHmac("sha1", MERCHANT_PASSWORD)
+      .createHmac("md5", MERCHANT_PASSWORD)
       .update(signatureString, "utf8")
       .digest("base64");
 
@@ -62,7 +58,6 @@ export async function handler(event, context) {
       merchantSignature
     });
 
-    // HTML форма
     const formInputs = [
       ["merchantAccount", MERCHANT_ACCOUNT],
       ["merchantDomainName", MERCHANT_DOMAIN_NAME],
