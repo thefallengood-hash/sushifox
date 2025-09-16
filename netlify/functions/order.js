@@ -1,3 +1,4 @@
+// netlify/functions/order.js
 const _getFetch = async () => (typeof fetch === 'undefined') ? (await import('node-fetch')).default : fetch;
 
 export async function handler(event) {
@@ -5,20 +6,18 @@ export async function handler(event) {
     const fetch = await _getFetch();
     const POSTER_TOKEN = process.env.POSTER_API_KEY;
 
-    if (event.httpMethod !== 'POST') return { statusCode:405, body:'Method Not Allowed' };
+    if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
 
     const body = JSON.parse(event.body || '{}');
-
-    const items = (body.items || []).map(i => ({
-      product_id: i.id,         // id з Poster
+    const items = (body.items || []).map(i=>({
+      product_id: i.id,   // обов'язково Poster product_id
       count: i.qty || 1,
       price: i.price
     }));
 
-    if (!POSTER_TOKEN) {
-      // mock для локальної перевірки
-      const id = Math.floor(Math.random()*900000)+100000;
-      return { statusCode:200, body: JSON.stringify({ success:true, id }) };
+    if(!POSTER_TOKEN){
+      // локальний тест
+      return { statusCode:200, body: JSON.stringify({ success:true, id:Math.floor(Math.random()*900000)+100000 }) };
     }
 
     const orderBody = {
@@ -29,7 +28,7 @@ export async function handler(event) {
       products: items
     };
 
-    const res = await fetch(`https://joinposter.com/api/incomingOrders.createIncomingOrder?token=${POSTER_TOKEN}`, {
+    const res = await fetch(`https://joinposter.com/api/incomingOrders.createIncomingOrder?token=${POSTER_TOKEN}`,{
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify(orderBody)
@@ -37,7 +36,7 @@ export async function handler(event) {
 
     const result = await res.json();
 
-    if (!result?.response) {
+    if(!result?.response){
       console.error('Poster error', result);
       return { statusCode:500, body: JSON.stringify({ success:false, error:'Poster returned error', detail:result }) };
     }

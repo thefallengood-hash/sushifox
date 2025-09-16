@@ -30,13 +30,11 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 #thumbs{display:flex;gap:6px;overflow:hidden}
 #thumbs img{height:60px;width:100px;object-fit:cover;border-radius:10px;opacity:.65;cursor:pointer;transition:all .18s}
 #thumbs img.active{opacity:1;box-shadow:0 0 0 3px rgba(255,153,0,.12);transform:translateY(-2px)}
-
 /* Products grid */
 .products{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
 @media(max-width:980px){.products{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.products{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:460px){.products{grid-template-columns:repeat(1,1fr)}}
-
 .card{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(2,6,23,.06);display:flex;flex-direction:column;transition:transform .18s}
 .card:hover{transform:translateY(-6px)}
 .card-img{width:100%;height:160px;object-fit:cover;cursor:pointer}
@@ -44,15 +42,12 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .card-title{font-weight:700;color:#0b1220}
 .card-desc{font-size:13px;color:var(--muted);min-height:36px}
 .card-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-
 /* Buttons */
 .btn{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
 .btn:active{transform:translateY(1px)}
-
 /* Cart FAB */
 .cart-fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:18px;background:linear-gradient(120deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;cursor:pointer;box-shadow:var(--shadow);z-index:60}
 .cart-count{position:absolute;top:-6px;right:-6px;background:#071023;color:#fff;border-radius:999px;padding:3px 7px;font-size:12px}
-
 /* Modal / sheet */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.45);z-index:80;padding:16px}
 .modal.open{display:flex}
@@ -67,7 +62,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .icon-btn{padding:6px;border-radius:8px;border:none;background:#f0f0f0;cursor:pointer}
 .summary{background:#fafafa;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid #e7e7e7}
-
 /* Mini lightbox (clone) */
 #miniLightboxImg{position:fixed;border-radius:12px;box-shadow:0 20px 50px rgba(2,6,23,.5);cursor:pointer;transition:transform .35s ease, opacity .2s ease;will-change:transform;z-index:200;display:none}
 </style>
@@ -137,27 +131,25 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   </div>
 </div>
 
+<!-- Mini lightbox clone -->
 <img id="miniLightboxImg" alt="" />
 
 <script>
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
-const LIQPAY_API = '/.netlify/functions/liqpay';
 const IMG_FALLBACK = '/images/noimage.png';
-
 let allProducts = [];
 let categories = [];
 let currentCategory = null;
 let cart = JSON.parse(localStorage.getItem('sushi_cart') || '[]');
 
 function formatUAH(n){ return Math.round(n) + '₴'; }
-function safeImg(url){ return url ? url : IMG_FALLBACK; }
+function safeImg(url){ return url || IMG_FALLBACK; }
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
 async function loadMenu(){
   try{
     const res = await fetch(MENU_API);
-    if(!res.ok) throw new Error('Не вдалося завантажити меню');
     const data = await res.json();
     allProducts = data.products || [];
     categories = data.categories.length ? data.categories : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
@@ -165,7 +157,6 @@ async function loadMenu(){
     if(categories.length) showCategory(categories[0]);
   }catch(err){
     console.error('loadMenu error', err);
-    alert('Не вдалося завантажити меню з Poster');
   }
 }
 
@@ -206,7 +197,6 @@ function renderProducts(products){
   initProductLightbox();
 }
 
-/* Slider + thumbs (як раніше) */
 let sliderInterval = null;
 function renderSlider(products){
   const slider = document.getElementById('slider');
@@ -237,7 +227,6 @@ function showSlide(n){
 document.getElementById('thumbPrev').addEventListener('click', ()=> { document.getElementById('thumbs').scrollBy({left:-120,behavior:'smooth'}); });
 document.getElementById('thumbNext').addEventListener('click', ()=> { document.getElementById('thumbs').scrollBy({left:120,behavior:'smooth'}); });
 
-/* Lightbox */
 function initProductLightbox(){
   document.querySelectorAll('.product-img, #slider img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
@@ -250,7 +239,7 @@ function openLightbox(imgEl){
   clone.id = 'miniLightboxImg';
   clone.style.position='fixed'; clone.style.top=rect.top+'px'; clone.style.left=rect.left+'px';
   clone.style.width=rect.width+'px'; clone.style.height=rect.height+'px';
-  clone.style.transition='transform .35s ease, opacity .2s ease';
+  clone.style.transition='transform .35s ease, top .35s ease, left .35s ease, width .35s ease, height .35s ease, opacity .2s ease';
   clone.style.transformOrigin='center center'; clone.style.borderRadius='12px'; clone.style.zIndex=9999; clone.style.cursor='pointer'; clone.style.objectFit='cover';
   document.body.appendChild(clone);
   const vw=window.innerWidth,vh=window.innerHeight; const maxW=vw*0.9,maxH=vh*0.9;
@@ -258,8 +247,11 @@ function openLightbox(imgEl){
   const centerX=rect.left+rect.width/2, centerY=rect.top+rect.height/2;
   const dx=(vw/2)-centerX, dy=(vh/2)-centerY;
   requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; });
-  function close(){ clone.style.transform='translate(0px,0px) scale(1)'; setTimeout(()=> { clone.remove(); }, 350); window._miniLb=null; }
-  clone.addEventListener('click', close); window._miniLb = { close };
+  function close(){ clone.style.transform='translate(0px, 0px) scale(1)'; setTimeout(()=> { if(clone.parentElement) clone.parentElement.removeChild(clone); }, 350); window._miniLb=null; document.removeEventListener('click', outsideHandler); window.removeEventListener('keydown', keyHandler); }
+  function outsideHandler(e){ if(e.target !== clone) close(); }
+  function keyHandler(e){ if(e.key === 'Escape') close(); }
+  clone.addEventListener('click', close); setTimeout(()=>document.addEventListener('click', outsideHandler),0); window.addEventListener('keydown', keyHandler);
+  window._miniLb = { close };
 }
 
 /* CART */
@@ -296,10 +288,10 @@ function updateCartUI(){
 window.changeQty = (i,n)=>{ if(!cart[i]) return; cart[i].qty += n; if(cart[i].qty < 1) cart.splice(i,1); saveCart(); updateCartUI(); };
 window.removeItem = (i)=>{ cart.splice(i,1); saveCart(); updateCartUI(); };
 
-document.getElementById('openCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.add('open'); });
-document.getElementById('closeCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.remove('open'); });
+document.getElementById('openCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.add('open'); document.getElementById('cartModal').setAttribute('aria-hidden','false'); });
+document.getElementById('closeCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.remove('open'); document.getElementById('cartModal').setAttribute('aria-hidden','true'); });
 
-/* CHECKOUT через Poster */
+/* CHECKOUT */
 document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
   if(cart.length === 0){ alert('Кошик порожній'); return; }
   const name = document.getElementById('custName').value.trim();
@@ -321,20 +313,17 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
   try{
     const r = await fetch(ORDER_API, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     const orderRes = await r.json();
-    if(!orderRes || !orderRes.id){ document.getElementById('orderResult').textContent='Помилка при створенні замовлення'; return; }
+    if(!orderRes?.success){ document.getElementById('orderResult').textContent='Помилка при створенні замовлення'; return; }
 
     if(payment === 'cash'){
       document.getElementById('orderResult').textContent = `Замовлення прийнято №${orderRes.id}`;
-      cart = []; saveCart(); updateCartUI();
+      cart=[]; saveCart(); updateCartUI();
       setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),1500);
       return;
     }
 
-    const payRes = await fetch(LIQPAY_API, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ orderId: orderRes.id, amount: payload.total, description: `Оплата замовлення #${orderRes.id}` }) });
-    const html = await payRes.text();
-    const w = window.open("", "_self");
-    w.document.write(html);
-    w.document.close();
+    // Онлайн-оплата (LiqPay) — тут можна додати інтеграцію
+    document.getElementById('orderResult').textContent='Замовлення створено. Оплата...';
 
   }catch(err){
     console.error('checkout error', err);
