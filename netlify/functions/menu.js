@@ -7,47 +7,30 @@ export async function handler() {
     const POSTER_TOKEN = process.env.POSTER_API_KEY;
 
     if (!POSTER_TOKEN) {
-      return { 
-        statusCode: 200, 
-        body: JSON.stringify({ 
-          products: [],
-          categories: []
-        }) 
-      };
+      return { statusCode:500, body: JSON.stringify({ error: 'POSTER_API_KEY not set' }) };
     }
 
-    // 1) отримати список категорій
-    const catRes = await fetch('https://joinposter.com/api/productcategory.getAll', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: POSTER_TOKEN })
-    });
-    const catData = await catRes.json();
-    const categories = (catData.categories || []).map(c => c.name);
+    const res = await fetch(`https://joinposter.com/api/product.getAll?token=${POSTER_TOKEN}`);
+    const data = await res.json();
 
-    // 2) отримати список продуктів
-    const prodRes = await fetch('https://joinposter.com/api/product.getAll', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: POSTER_TOKEN })
-    });
-    const prodData = await prodRes.json();
-    const products = (prodData.products || []).map(p => ({
-      id: p.id,
+    if (!data?.response?.products) {
+      return { statusCode:500, body: JSON.stringify({ error: 'Poster returned invalid data', detail: data }) };
+    }
+
+    // Форматуємо продукти для фронтенду
+    const products = data.response.products.map(p => ({
+      id: p.product_id,
       name: p.name,
-      desc: p.description || '',
       price: Number(p.price) || 0,
-      category: categories.find(c => c === p.product_category_name) || 'Інше',
-      img: p.image_url || ''
+      category: p.category_name || 'Інше',
+      img: p.image || '/images/noimage.png',
+      desc: p.description || ''
     }));
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ products, categories })
-    };
+    return { statusCode:200, body: JSON.stringify(products) };
 
   } catch(err) {
     console.error('menu.js error', err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return { statusCode:500, body: JSON.stringify({ error: err.message }) };
   }
 }

@@ -1,4 +1,3 @@
-// netlify/functions/order.js
 const _getFetch = async () => (typeof fetch === 'undefined') ? (await import('node-fetch')).default : fetch;
 
 export async function handler(event) {
@@ -6,20 +5,18 @@ export async function handler(event) {
     const fetch = await _getFetch();
     const POSTER_TOKEN = process.env.POSTER_API_KEY;
 
-    if (event.httpMethod !== 'POST') {
-      return { statusCode: 405, body: 'Method Not Allowed' };
-    }
+    if (event.httpMethod !== 'POST') return { statusCode:405, body:'Method Not Allowed' };
 
     const body = JSON.parse(event.body || '{}');
 
     const items = (body.items || []).map(i => ({
-      product_id: i.id,         // обов'язково справжній ID з Poster
+      product_id: i.id,         // id з Poster
       count: i.qty || 1,
       price: i.price
     }));
 
     if (!POSTER_TOKEN) {
-      // mock для локального тесту
+      // mock для локальної перевірки
       const id = Math.floor(Math.random()*900000)+100000;
       return { statusCode:200, body: JSON.stringify({ success:true, id }) };
     }
@@ -42,7 +39,7 @@ export async function handler(event) {
 
     if (!result?.response) {
       console.error('Poster error', result);
-      return { statusCode:500, body: JSON.stringify({ success:false, error: 'Poster returned error', detail: result }) };
+      return { statusCode:500, body: JSON.stringify({ success:false, error:'Poster returned error', detail:result }) };
     }
 
     return { statusCode:200, body: JSON.stringify({ success:true, id: result.response.incoming_order_id }) };
