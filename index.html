@@ -30,11 +30,13 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 #thumbs{display:flex;gap:6px;overflow:hidden}
 #thumbs img{height:60px;width:100px;object-fit:cover;border-radius:10px;opacity:.65;cursor:pointer;transition:all .18s}
 #thumbs img.active{opacity:1;box-shadow:0 0 0 3px rgba(255,153,0,.12);transform:translateY(-2px)}
+
 /* Products grid */
 .products{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
 @media(max-width:980px){.products{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.products{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:460px){.products{grid-template-columns:repeat(1,1fr)}}
+
 .card{background:var(--card);border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(2,6,23,.06);display:flex;flex-direction:column;transition:transform .18s}
 .card:hover{transform:translateY(-6px)}
 .card-img{width:100%;height:160px;object-fit:cover;cursor:pointer}
@@ -42,12 +44,15 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .card-title{font-weight:700;color:#0b1220}
 .card-desc{font-size:13px;color:var(--muted);min-height:36px}
 .card-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+
 /* Buttons */
 .btn{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
 .btn:active{transform:translateY(1px)}
+
 /* Cart FAB */
 .cart-fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:18px;background:linear-gradient(120deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;cursor:pointer;box-shadow:var(--shadow);z-index:60}
 .cart-count{position:absolute;top:-6px;right:-6px;background:#071023;color:#fff;border-radius:999px;padding:3px 7px;font-size:12px}
+
 /* Modal / sheet */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.45);z-index:80;padding:16px}
 .modal.open{display:flex}
@@ -62,6 +67,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .icon-btn{padding:6px;border-radius:8px;border:none;background:#f0f0f0;cursor:pointer}
 .summary{background:#fafafa;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid #e7e7e7}
+
 /* Mini lightbox (clone) */
 #miniLightboxImg{position:fixed;border-radius:12px;box-shadow:0 20px 50px rgba(2,6,23,.5);cursor:pointer;transition:transform .35s ease, opacity .2s ease;will-change:transform;z-index:200;display:none}
 </style>
@@ -135,31 +141,50 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 <img id="miniLightboxImg" alt="" />
 
 <script>
+/* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
+const LIQPAY_API = '/.netlify/functions/liqpay'; // optional
 const IMG_FALLBACK = '/images/noimage.png';
+
+/* ========== СТЕЙТ ========== */
 let allProducts = [];
 let categories = [];
 let currentCategory = null;
 let cart = JSON.parse(localStorage.getItem('sushi_cart') || '[]');
 
+/* ========== УТИЛІТИ ========== */
 function formatUAH(n){ return Math.round(n) + '₴'; }
-function safeImg(url){ return url || IMG_FALLBACK; }
+function safeImg(url){ return url ? url : IMG_FALLBACK; }
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
+/* ========== ЗАВАНТАЖЕННЯ МЕНЮ ========== */
 async function loadMenu(){
   try{
     const res = await fetch(MENU_API);
+    if(!res.ok) throw new Error('Не вдалося завантажити меню з сервера');
     const data = await res.json();
-    allProducts = data.products || [];
-    categories = data.categories.length ? data.categories : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
+
+    // API повинен повернути { products: [], categories: [] } (наш menu.js так робить)
+    if (data?.products && Array.isArray(data.products)) {
+      allProducts = data.products;
+      categories = Array.isArray(data.categories) && data.categories.length ? data.categories : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
+    } else {
+      // пусто — повідомлення
+      allProducts = [];
+      categories = [];
+      console.warn('menu: отримано порожні дані');
+    }
     renderCategories();
     if(categories.length) showCategory(categories[0]);
-  }catch(err){
+    else document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
+  } catch(err){
     console.error('loadMenu error', err);
+    document.getElementById('products').innerHTML = `<div style="padding:20px;color:var(--muted)">Помилка при завантаженні меню</div>`;
   }
 }
 
+/* ========== КАТЕГОРІЇ ========== */
 function renderCategories(){
   const tabs = document.getElementById('tabs'); tabs.innerHTML='';
   categories.forEach(cat=>{
@@ -169,6 +194,7 @@ function renderCategories(){
   });
 }
 
+/* ========== ПОКАЗ КАТЕГОРІЇ ========== */
 function showCategory(cat){
   currentCategory = cat;
   document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.textContent===cat));
@@ -177,8 +203,10 @@ function showCategory(cat){
   renderSlider(prods);
 }
 
+/* ========== РЕНДЕР ПРОДУКТІВ ========== */
 function renderProducts(products){
   const wrap = document.getElementById('products'); wrap.innerHTML = '';
+  if(!products.length){ wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; return; }
   products.forEach(p=>{
     const card = document.createElement('div'); card.className = 'card';
     card.innerHTML = `
@@ -191,12 +219,13 @@ function renderProducts(products){
           <button class="btn add-btn">В кошик</button>
         </div>
       </div>`;
-    card.querySelector('.add-btn').onclick = ()=> addToCartFromProduct(p);
+    card.querySelector('.add-btn').addEventListener('click', ()=> addToCartFromProduct(p));
     wrap.appendChild(card);
   });
   initProductLightbox();
 }
 
+/* ========== СЛАЙДЕР (з мініатюрами) ========== */
 let sliderInterval = null;
 function renderSlider(products){
   const slider = document.getElementById('slider');
@@ -209,10 +238,10 @@ function renderSlider(products){
     slider.appendChild(s);
     const t = document.createElement('img'); t.src = safeImg(p.img);
     if(i===0) t.classList.add('active');
-    t.onclick = ()=> showSlide(i);
+    t.addEventListener('click', ()=> showSlide(i));
     thumbs.appendChild(t);
   });
-  let idx = 0; clearInterval(sliderInterval);
+  let idx = 0; if(sliderInterval) clearInterval(sliderInterval);
   sliderInterval = setInterval(()=>{ idx = (idx + 1) % products.length; showSlide(idx); }, 4000);
 }
 function showSlide(n){
@@ -221,12 +250,13 @@ function showSlide(n){
   if(!slides.length) return;
   slides.forEach(s=>s.classList.remove('active'));
   tbs.forEach(t=>t.classList.remove('active'));
-  slides[n].classList.add('active');
+  if(slides[n]) slides[n].classList.add('active');
   if(tbs[n]) tbs[n].classList.add('active');
 }
 document.getElementById('thumbPrev').addEventListener('click', ()=> { document.getElementById('thumbs').scrollBy({left:-120,behavior:'smooth'}); });
 document.getElementById('thumbNext').addEventListener('click', ()=> { document.getElementById('thumbs').scrollBy({left:120,behavior:'smooth'}); });
 
+/* ========== МІНІ-ЛАЙТБОКС ========== */
 function initProductLightbox(){
   document.querySelectorAll('.product-img, #slider img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
@@ -246,28 +276,30 @@ function openLightbox(imgEl){
   const scale=Math.min(1.8,maxW/rect.width,maxH/rect.height);
   const centerX=rect.left+rect.width/2, centerY=rect.top+rect.height/2;
   const dx=(vw/2)-centerX, dy=(vh/2)-centerY;
-  requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; });
+  requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; clone.style.display='block'; });
   function close(){ clone.style.transform='translate(0px, 0px) scale(1)'; setTimeout(()=> { if(clone.parentElement) clone.parentElement.removeChild(clone); }, 350); window._miniLb=null; document.removeEventListener('click', outsideHandler); window.removeEventListener('keydown', keyHandler); }
   function outsideHandler(e){ if(e.target !== clone) close(); }
   function keyHandler(e){ if(e.key === 'Escape') close(); }
-  clone.addEventListener('click', close); setTimeout(()=>document.addEventListener('click', outsideHandler),0); window.addEventListener('keydown', keyHandler);
+  clone.addEventListener('click', close);
+  setTimeout(()=>document.addEventListener('click', outsideHandler),0);
+  window.addEventListener('keydown', keyHandler);
   window._miniLb = { close };
 }
 
-/* CART */
+/* ========== КОШИК ========== */
 function addToCartFromProduct(p){
   const id = p.id || p.product_id || p.name;
-  const existing = cart.find(i => i.id === id);
+  const existing = cart.find(c=>c.id === id);
   if(existing) existing.qty++;
-  else cart.push({ id, name: p.name, price: Number(p.price) || 0, qty:1, img: p.img || IMG_FALLBACK });
+  else cart.push({ id, name: p.name, price: Number(p.price)||0, qty:1, img: p.img || IMG_FALLBACK });
   saveCart(); updateCartUI();
 }
 function saveCart(){ localStorage.setItem('sushi_cart', JSON.stringify(cart)); }
 function updateCartUI(){
-  const list = document.getElementById('cartList'); list.innerHTML='';
+  const listEl = document.getElementById('cartList'); listEl.innerHTML = '';
   cart.forEach((c,i)=>{
-    const el = document.createElement('div'); el.className='cart-item';
-    el.innerHTML = `<img src="${safeImg(c.img)}" alt="${escapeHtml(c.name)}" />
+    const div = document.createElement('div'); div.className = 'cart-item';
+    div.innerHTML = `<img src="${safeImg(c.img)}" alt="${escapeHtml(c.name)}"/>
       <div>
         <div style="font-weight:700">${escapeHtml(c.name)}</div>
         <div style="color:var(--muted)">${formatUAH(c.price)} × ${c.qty}</div>
@@ -275,23 +307,34 @@ function updateCartUI(){
       <div style="text-align:right">
         <div style="font-weight:700">${formatUAH(c.price * c.qty)}</div>
         <div style="margin-top:8px">
-          <button class="icon-btn" onclick="changeQty(${i},-1)">−</button>
-          <button class="icon-btn" onclick="changeQty(${i},1)">+</button>
-          <button class="icon-btn" onclick="removeItem(${i})" style="margin-left:6px">✕</button>
+          <button class="icon-btn" data-idx="${i}" data-op="-1">−</button>
+          <button class="icon-btn" data-idx="${i}" data-op="+1">+</button>
+          <button class="icon-btn" data-idx="${i}" data-op="remove" style="margin-left:6px">✕</button>
         </div>
       </div>`;
-    list.appendChild(el);
+    listEl.appendChild(div);
   });
-  document.getElementById('cartTotal').textContent = formatUAH(cart.reduce((s,x)=> s + x.price * x.qty, 0));
-  document.getElementById('cartCount').textContent = cart.reduce((s,x)=> s + x.qty,0);
-}
-window.changeQty = (i,n)=>{ if(!cart[i]) return; cart[i].qty += n; if(cart[i].qty < 1) cart.splice(i,1); saveCart(); updateCartUI(); };
-window.removeItem = (i)=>{ cart.splice(i,1); saveCart(); updateCartUI(); };
 
+  // делегирование для кнопок
+  listEl.querySelectorAll('.icon-btn').forEach(btn=>{
+    btn.onclick = (e)=>{
+      const idx = Number(btn.getAttribute('data-idx'));
+      const op = btn.getAttribute('data-op');
+      if(op === 'remove'){ cart.splice(idx,1); }
+      else { cart[idx].qty += Number(op); if(cart[idx].qty < 1) cart.splice(idx,1); }
+      saveCart(); updateCartUI();
+    };
+  });
+
+  document.getElementById('cartTotal').textContent = formatUAH(cart.reduce((a,c)=>a+c.price*c.qty,0));
+  document.getElementById('cartCount').textContent = cart.reduce((a,c)=>a+c.qty,0);
+}
+
+/* открытие/закрытие модалки */
 document.getElementById('openCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.add('open'); document.getElementById('cartModal').setAttribute('aria-hidden','false'); });
 document.getElementById('closeCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.remove('open'); document.getElementById('cartModal').setAttribute('aria-hidden','true'); });
 
-/* CHECKOUT */
+/* ========== ОФОРМЛЕННЯ ЗАМОВЛЕННЯ ========== */
 document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
   if(cart.length === 0){ alert('Кошик порожній'); return; }
   const name = document.getElementById('custName').value.trim();
@@ -303,34 +346,70 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
 
   const payload = {
     customer: { name, phone, addr, note },
-    items: cart.map(c => ({ name: c.name, qty: c.qty, price: c.price, id: c.id })),
+    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })),
     total: cart.reduce((s,x)=> s + x.price * x.qty, 0),
     paymentMethod: payment
   };
 
-  document.getElementById('orderResult').textContent = 'Надсилаємо...';
+  const orderResultEl = document.getElementById('orderResult');
+  orderResultEl.textContent = 'Надсилаємо...';
 
   try{
-    const r = await fetch(ORDER_API, { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    // 1) створюємо замовлення в Poster через Netlify Function
+    const r = await fetch(ORDER_API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+    if(!r.ok) throw new Error('Помилка при створенні замовлення');
     const orderRes = await r.json();
-    if(!orderRes?.success){ document.getElementById('orderResult').textContent='Помилка при створенні замовлення'; return; }
 
+    if(!orderRes || !orderRes.success) {
+      console.error('order error', orderRes);
+      orderResultEl.textContent = 'Помилка при створенні замовлення';
+      return;
+    }
+
+    const orderId = orderRes.id || orderRes.orderId || null;
+    if(!orderId) {
+      orderResultEl.textContent = 'Замовлення створено, але невідомий ID';
+      return;
+    }
+
+    // якщо оплата готівкою — повідомляємо та очищаємо кошик
     if(payment === 'cash'){
-      document.getElementById('orderResult').textContent = `Замовлення прийнято №${orderRes.id}`;
-      cart=[]; saveCart(); updateCartUI();
+      orderResultEl.textContent = `Замовлення прийнято №${orderId}`;
+      cart = []; saveCart(); updateCartUI();
       setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),1500);
       return;
     }
 
-    // Онлайн-оплата (LiqPay) — тут можна додати інтеграцію
-    document.getElementById('orderResult').textContent='Замовлення створено. Оплата...';
+    // 2) якщо онлайн — спробуємо отримати LiqPay форму від Netlify function
+    try {
+      const payRes = await fetch(LIQPAY_API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ orderId, amount: payload.total, description: `Оплата замовлення #${orderId}` }) });
+      if(payRes.ok){
+        const html = await payRes.text();
+        // відкриваємо оплату в тій же вкладці (форму з автосабмітом)
+        const w = window.open("", "_self");
+        w.document.write(html);
+        w.document.close();
+        return;
+      } else {
+        console.warn('liqpay function returned not ok', payRes.status);
+        orderResultEl.textContent = `Замовлення створено №${orderId}. Очікуйте дзвінка для оплати.`;
+        cart = []; saveCart(); updateCartUI();
+        return;
+      }
+    } catch(payErr){
+      console.warn('liqpay error', payErr);
+      orderResultEl.textContent = `Замовлення створено №${orderId}. Оплата недоступна.`;
+      cart = []; saveCart(); updateCartUI();
+      return;
+    }
 
-  }catch(err){
+  } catch(err){
     console.error('checkout error', err);
-    document.getElementById('orderResult').textContent='Помилка при оформленні';
+    document.getElementById('orderResult').textContent = 'Помилка при оформленні замовлення';
   }
 });
 
+/* ========== ІНІЦІАЛІЗАЦІЯ ========== */
 updateCartUI();
 loadMenu();
 </script>
