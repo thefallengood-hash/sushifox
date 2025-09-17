@@ -12,11 +12,19 @@ export async function handler(event) {
     }
 
     const body = JSON.parse(event.body || '{}');
-    const items = (body.items || []).map(i => ({
-      product_id: i.id,
-      count: i.qty || 1,
-      price: i.price
-    }));
+
+    // проверяем товары
+    const items = (body.items || []).map(i => {
+      const product_id = i.id; // должно быть настоящее product_id из Poster
+      const qty = i.qty || 1;
+      const priceUah = i.price || 0;
+
+      return {
+        product_id,
+        count: qty,
+        price: Math.round(priceUah * 100) // гривны -> копейки
+      };
+    });
 
     if (!POSTER_TOKEN) {
       return {
@@ -29,13 +37,15 @@ export async function handler(event) {
     }
 
     const orderBody = {
-      spot_id: 1, // 👈 фиксированный ID точки
+      spot_id: 1, // твоя точка
       phone: body.customer?.phone || '',
       first_name: body.customer?.name || '',
       address: body.customer?.addr || '',
       comment: body.customer?.note || '',
       products: items
     };
+
+    console.log('Отправляем заказ в Poster:', JSON.stringify(orderBody));
 
     const res = await fetch(
       `https://joinposter.com/api/incomingOrders.createIncomingOrder?token=${POSTER_TOKEN}`,
@@ -47,9 +57,9 @@ export async function handler(event) {
     );
 
     const result = await res.json();
+    console.log('Ответ Poster:', result);
 
     if (!result?.response) {
-      console.error('Poster error', result);
       return {
         statusCode: 500,
         body: JSON.stringify({
