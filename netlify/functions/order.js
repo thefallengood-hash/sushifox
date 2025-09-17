@@ -1,6 +1,6 @@
 // netlify/functions/order.js
 const _getFetch = async () =>
-  typeof fetch === 'undefined' ? (await import('node-fetch')).default : fetch;
+  (typeof fetch === 'undefined') ? (await import('node-fetch')).default : fetch;
 
 export async function handler(event) {
   try {
@@ -13,13 +13,11 @@ export async function handler(event) {
 
     const body = JSON.parse(event.body || '{}');
     const items = (body.items || []).map(i => ({
-      product_id: i.id,       // Poster product_id
+      product_id: i.id,
       count: i.qty || 1,
-      // Poster требует цену в минимальной единице (копейки)
-      price: Math.round(i.price * 100)
+      price: i.price
     }));
 
-    // Локальный тест без Poster
     if (!POSTER_TOKEN) {
       return {
         statusCode: 200,
@@ -30,8 +28,8 @@ export async function handler(event) {
       };
     }
 
-    // Формируем тело заказа
     const orderBody = {
+      spot_id: 1, // 👈 фиксированный ID точки
       phone: body.customer?.phone || '',
       first_name: body.customer?.name || '',
       address: body.customer?.addr || '',
@@ -69,6 +67,7 @@ export async function handler(event) {
         id: result.response.incoming_order_id
       })
     };
+
   } catch (err) {
     console.error('order.js error', err);
     return {
