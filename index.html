@@ -163,18 +163,50 @@ h1{margin:0;font-size:22px;color:var(--accent)}
     <div id="products" class="products" aria-live="polite"></div>
   </div>
 
-  <!-- Контакты -->
-  <div class="contacts">
-    <h3>Контакти</h3>
+<style>
+/* Контакты и карта */
+.contacts{
+  margin-top:40px;
+  background:#fff;
+  border-radius:14px;
+  padding:20px;
+  box-shadow:var(--shadow);
+  color:var(--accent); /* 👈 теперь текст оранжевый */
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+}
+.contact-info{
+  flex:1;
+  min-width:240px;
+}
+.contact-row{margin:6px 0;font-size:15px}
+.contact-row a.link{color:var(--accent);font-weight:600;text-decoration:none}
+.map{
+  flex:1.2;
+  min-width:300px;
+  height:260px;
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+</style>
+
+<!-- Контакты -->
+<div class="contacts">
+  <div class="contact-info">
+    <h3 style="margin-top:0">Контакти</h3>
     <div class="contact-row">📞 Телефон: <a class="link" href="tel:+380000000000">+38 (000) 000-00-00</a></div>
     <div class="contact-row">🕘 Час роботи: 10:00 — 22:00</div>
     <div class="contact-row">📍 Адреса: Вольногорськ, бульвар Миру 15</div>
     <div class="contact-row">📸 Instagram: <a class="link" href="https://www.instagram.com/vice_city_bar_volnohorsk/" target="_blank">@vice_city_bar_volnohorsk</a></div>
     <div class="contact-row">✈️ Telegram: <a class="link" href="https://t.me/morphlindance0" target="_blank">@morphlindance0</a></div>
-    <div class="map">
-      <iframe src="https://www.google.com/maps/embed?pb=!1m18..." width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-    </div>
   </div>
+  <div class="map">
+    <iframe src="https://www.google.com/maps/embed?pb=!1m18..." width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+  </div>
+</div>
+
 
   <div style="height:28px"></div>
 </div>
