@@ -7,8 +7,11 @@
 <link rel="icon" href="images/favicon.png" type="image/x-icon" />
 <style>
 :root{
-  --bg:#0f1720; --card:#ff9900; --muted:#ff9900;
-  --accent:#ff9900; --accent-2:#ff9900; --radius:14px; --shadow:0 12px 30px rgba(2,6,23,.45);
+  --bg:#0f1720;
+  --accent:#ff9900;   /* помаранчевий — для цін та описів */
+  --muted:#98a0aa;
+  --radius:14px;
+  --shadow:0 12px 30px rgba(2,6,23,.45);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:radial-gradient(900px 400px at -10% -10%, #ffeef6 0%, transparent 0%), radial-gradient(900px 500px at 110% -10%, #e8f7ff 0%, transparent 0%), var(--bg); color:#e6eef6; min-height:100dvh; -webkit-font-smoothing:antialiased;}
@@ -19,8 +22,9 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .subtitle{color:var(--muted);font-size:13px}
 .tabs{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
 .tab{padding:10px 14px;border-radius:999px;background:#fff;font-weight:600;color:#111;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.08)}
-.tab.active{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff}
+.tab.active{background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff}
 .section{background:transparent;border-radius:var(--radius)}
+
 /* Slider */
 .slider-container{max-width:420px;margin:0 auto;border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
 .slide{display:none}
@@ -37,8 +41,9 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 @media(max-width:720px){.products{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:460px){.products{grid-template-columns:repeat(1,1fr)}}
 
+/* Карточки: теперь белые фон */
 .card{
-  background:#fff; /* теперь белый фон */
+  background:#fff; /* белый фон карточки */
   border-radius:12px;
   overflow:hidden;
   box-shadow:0 10px 30px rgba(2,6,23,.06);
@@ -50,16 +55,16 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .card-img{width:100%;height:160px;object-fit:cover;cursor:pointer}
 .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
 .card-title{font-weight:700;color:#0b1220}
-.card-desc{font-size:13px;color:var(--card); min-height:36px} /* описание оранжевое */
+.card-desc{font-size:13px;color:var(--accent);min-height:36px} /* Опис — помаранчевий */
 .card-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.price{font-weight:700;color:var(--card)} /* цена оранжевая */
+.price{font-weight:700;color:var(--accent)} /* Ціна — помаранчевий */
 
 /* Buttons */
-.btn{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+.btn{background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
 .btn:active{transform:translateY(1px)}
 
 /* Cart FAB */
-.cart-fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:18px;background:linear-gradient(120deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;cursor:pointer;box-shadow:var(--shadow);z-index:60}
+.cart-fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:18px;background:linear-gradient(120deg,var(--accent),#ffb347);display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;cursor:pointer;box-shadow:var(--shadow);z-index:60}
 .cart-count{position:absolute;top:-6px;right:-6px;background:#071023;color:#fff;border-radius:999px;padding:3px 7px;font-size:12px}
 
 /* Modal / sheet */
@@ -72,16 +77,16 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .cart-list{display:flex;flex-direction:column;gap:10px;padding:6px}
 .cart-item{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;background:#fbfbfb;padding:8px;border-radius:10px}
 .cart-item img{width:72px;height:72px;object-fit:cover;border-radius:8px}
+
+/* Cart text classes (used in JS rendering) */
+.cart-name{font-weight:700;color:var(--accent)}
+.cart-qty{color:var(--muted)}
+.cart-total{font-weight:700;color:var(--accent)}
+
 .qty{display:flex;align-items:center;gap:6px}
 .icon-btn{padding:6px;border-radius:8px;border:none;background:#f0f0f0;cursor:pointer}
 .summary{background:#fafafa;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid #e7e7e7}
-
-/* Цвет цены в корзине */
-.cart-item div > div:nth-child(2){
-  color: var(--card);
-  font-weight:700;
-}
 
 /* Mini lightbox (clone) */
 #miniLightboxImg{position:fixed;border-radius:12px;box-shadow:0 20px 50px rgba(2,6,23,.5);cursor:pointer;transition:transform .35s ease, opacity .2s ease;will-change:transform;z-index:200;display:none}
@@ -159,7 +164,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 /* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
-const LIQPAY_API = '/.netlify/functions/liqpay'; // optional
+const LIQPAY_API = '/.netlify/functions/liqpay'; // лишається на майбутнє, поки не використовується
 const IMG_FALLBACK = '/images/noimage.png';
 
 /* ========== СТЕЙТ ========== */
@@ -180,12 +185,10 @@ async function loadMenu(){
     if(!res.ok) throw new Error('Не вдалося завантажити меню з сервера');
     const data = await res.json();
 
-    // API повинен повернути { products: [], categories: [] } (наш menu.js так робить)
     if (data?.products && Array.isArray(data.products)) {
       allProducts = data.products;
       categories = Array.isArray(data.categories) && data.categories.length ? data.categories : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
     } else {
-      // пусто — повідомлення
       allProducts = [];
       categories = [];
       console.warn('menu: отримано порожні дані');
@@ -316,11 +319,11 @@ function updateCartUI(){
     const div = document.createElement('div'); div.className = 'cart-item';
     div.innerHTML = `<img src="${safeImg(c.img)}" alt="${escapeHtml(c.name)}"/>
       <div>
-        <div style="font-weight:700">${escapeHtml(c.name)}</div>
-        <div style="color:var(--muted)">${formatUAH(c.price)} × ${c.qty}</div>
+        <div class="cart-name">${escapeHtml(c.name)}</div>
+        <div class="cart-qty">${formatUAH(c.price)} × ${c.qty}</div>
       </div>
       <div style="text-align:right">
-        <div style="font-weight:700">${formatUAH(c.price * c.qty)}</div>
+        <div class="cart-total">${formatUAH(c.price * c.qty)}</div>
         <div style="margin-top:8px">
           <button class="icon-btn" data-idx="${i}" data-op="-1">−</button>
           <button class="icon-btn" data-idx="${i}" data-op="+1">+</button>
@@ -361,7 +364,7 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
 
   const payload = {
     customer: { name, phone, addr, note },
-    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })),
+    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })), // price у гривнях — order.js конвертує в копійки
     total: cart.reduce((s,x)=> s + x.price * x.qty, 0),
     paymentMethod: payment
   };
@@ -369,25 +372,23 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
   const orderResultEl = document.getElementById('orderResult');
   orderResultEl.textContent = 'Надсилаємо...';
 
-  try{
-    // 1) створюємо замовлення в Poster через Netlify Function
-    const r = await fetch(ORDER_API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-    if(!r.ok) throw new Error('Помилка при створенні замовлення');
-    const orderRes = await r.json();
+  try {
+    // 1) створюємо замовлення в Poster (через Netlify Function)
+    const res = await fetch(ORDER_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok) throw new Error('Помилка при створенні замовлення на Poster');
+    const orderRes = await res.json();
+    const orderId = orderRes?.id || orderRes?.orderId || null;
 
-    if(!orderRes || !orderRes.success) {
-      console.error('order error', orderRes);
-      orderResultEl.textContent = 'Помилка при створенні замовлення';
+    if(!orderId){
+      orderResultEl.textContent = 'Замовлення створено на Poster, але невідомий ID';
       return;
     }
 
-    const orderId = orderRes.id || orderRes.orderId || null;
-    if(!orderId) {
-      orderResultEl.textContent = 'Замовлення створено, але невідомий ID';
-      return;
-    }
-
-    // якщо оплата готівкою — повідомляємо та очищаємо кошик
+    // якщо готівка — відразу підтверджуємо
     if(payment === 'cash'){
       orderResultEl.textContent = `Замовлення прийнято №${orderId}`;
       cart = []; saveCart(); updateCartUI();
@@ -395,28 +396,9 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
       return;
     }
 
-    // 2) якщо онлайн — спробуємо отримати LiqPay форму від Netlify function
-    try {
-      const payRes = await fetch(LIQPAY_API, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ orderId, amount: payload.total, description: `Оплата замовлення #${orderId}` }) });
-      if(payRes.ok){
-        const html = await payRes.text();
-        // відкриваємо оплату в тій же вкладці (форму з автосабмітом)
-        const w = window.open("", "_self");
-        w.document.write(html);
-        w.document.close();
-        return;
-      } else {
-        console.warn('liqpay function returned not ok', payRes.status);
-        orderResultEl.textContent = `Замовлення створено №${orderId}. Очікуйте дзвінка для оплати.`;
-        cart = []; saveCart(); updateCartUI();
-        return;
-      }
-    } catch(payErr){
-      console.warn('liqpay error', payErr);
-      orderResultEl.textContent = `Замовлення створено №${orderId}. Оплата недоступна.`;
-      cart = []; saveCart(); updateCartUI();
-      return;
-    }
+    // якщо онлайн — тимчасово не активна оплата, але замовлення вже створено
+    orderResultEl.textContent = `Замовлення створено №${orderId}. Онлайн-оплата тимчасово недоступна.`;
+    cart = []; saveCart(); updateCartUI();
 
   } catch(err){
     console.error('checkout error', err);
