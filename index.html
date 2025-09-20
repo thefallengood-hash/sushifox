@@ -8,7 +8,7 @@
 <style>
 :root{
   --bg:#2a2a2a;
-  --accent:#ff9900;   /* помаранчевий — для цін та описів */
+  --accent:#ff9900;
   --muted:#98a0aa;
   --radius:14px;
   --shadow:0 12px 30px rgba(2,6,23,.45);
@@ -25,7 +25,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .tab.active{background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff}
 .section{background:transparent;border-radius:var(--radius)}
 
-/* Slider for product images (unchanged) */
+/* Slider for product images */
 .slider-container{max-width:420px;margin:0 auto;border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
 .slide{display:none}
 .slide.active{display:block}
@@ -41,9 +41,9 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 @media(max-width:720px){.products{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:460px){.products{grid-template-columns:repeat(1,1fr)}}
 
-/* Card styles */
+/* Card */
 .card{
-  background:#fff; /* белый фон карточки */
+  background:#fff;
   border-radius:12px;
   overflow:hidden;
   box-shadow:0 10px 30px rgba(2,6,23,.06);
@@ -55,9 +55,9 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .card-img{width:100%;height:160px;object-fit:cover;cursor:pointer}
 .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
 .card-title{font-weight:700;color:#0b1220}
-.card-desc{font-size:13px;color:var(--accent);min-height:36px} /* Опис — помаранчевий */
+.card-desc{font-size:13px;color:var(--accent);min-height:36px}
 .card-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.price{font-weight:700;color:var(--accent)} /* Ціна — помаранчевий */
+.price{font-weight:700;color:var(--accent)}
 
 /* Buttons */
 .btn{background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
@@ -78,7 +78,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .cart-item{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;background:#fbfbfb;padding:8px;border-radius:10px}
 .cart-item img{width:72px;height:72px;object-fit:cover;border-radius:8px}
 
-/* Cart text classes (used in JS rendering) */
+/* Cart text classes */
 .cart-name{font-weight:700;color:var(--accent)}
 .cart-qty{color:var(--muted)}
 .cart-total{font-weight:700;color:var(--accent)}
@@ -88,70 +88,61 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .summary{background:#fafafa;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid #e7e7e7}
 
-/* Mini lightbox (clone) */
+/* Mini lightbox */
 #miniLightboxImg{position:fixed;border-radius:12px;box-shadow:0 20px 50px rgba(2,6,23,.5);cursor:pointer;transition:transform .35s ease, opacity .2s ease;will-change:transform;z-index:200;display:none}
 
-/* -----------------------------
-   Точечные правки: сделать текст в корзине чёрным
-   (не меняем ничего лишнего)
-   ----------------------------- */
+/* Cart text override for modal */
+.sheet h3 { color: #000 !important; }
+.sheet label { color: #000 !important; font-weight:600; }
+#orderResult { color:#000 !important; font-weight:700; }
+.sheet .total, .sheet .total span, #cartTotal { color:#000 !important; font-weight:800; }
+#cartList .cart-name, #cartList .cart-qty, #cartList .cart-total, .cart-total, .cart-name { color:#000 !important; }
 
-/* Заголовок модалки "Ваше замовлення" */
-.sheet h3 {
-  color: #000 !important;
-}
+/* Visual upgrade: cards, slider, etc (kept) */
+.tab { font-size: 14px; transition: transform .18s, box-shadow .18s; }
+.tab:hover { transform: translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.12); }
+.card { transition: transform .25s ease, box-shadow .25s ease; }
+.card:hover { transform: translateY(-8px) scale(1.02); box-shadow:0 20px 40px rgba(0,0,0,.12); }
+.card-title { font-size: 16px; line-height:1.3; }
+.card-desc { font-size:13px; line-height:1.4; }
+.add-btn { font-size:13px; padding:6px 10px; }
+.slider-container { border-radius:18px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+.slide img { transition: transform .35s ease; }
+.slide.active img { transform: scale(1.02); }
+#thumbs img { border:2px solid transparent; }
+#thumbs img.active { border-color: var(--accent); transform: translateY(-4px); }
 
-/* Метки оплаты (label рядом с радио) */
-.sheet label {
-  color: #000 !important;
-  font-weight: 600;
-}
+/* Contacts */
+.contacts { border-radius:18px; padding:24px; gap:24px; box-shadow:0 20px 40px rgba(0,0,0,.15); color:var(--accent); }
+.contact-info h3{font-size:18px;}
+.contact-row{font-size:15px;line-height:1.5;}
+.map{flex:1.2;min-width:300px;height:260px;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);}
 
-/* Текст результата/ошибки (id orderResult) */
-#orderResult {
-  color: #000 !important;
-  font-weight: 700;
-}
-
-/* Текст "Разом" и сумма в правой колонке */
-.sheet .total,
-.sheet .total span,
-#cartTotal {
-  color: #000 !important;
-  font-weight: 800;
-}
-
-/* Элементы в списке корзины: название, qty и итог */
-#cartList .cart-name,
-#cartList .cart-qty,
-#cartList .cart-total,
-.cart-total,
-.cart-name {
-  color: #000 !important;
-}
-
-/* Кнопки +/- и крестик оставляем без изменений (не трогаем) */
+/* Skeleton / fly-to-cart (kept) */
+.card.skeleton { background:#eee; color:transparent; pointer-events:none; min-height:220px; }
+.card.skeleton .card-img { background:#ddd; height:160px; }
+.fly-to-cart { position:fixed; z-index:9999; transition: transform 0.6s cubic-bezier(0.5,-0.5,0.5,1.5), opacity .4s; pointer-events:none; border-radius:12px; width:80px; height:80px; object-fit:cover; }
 
 /* ----------------------------
-  CATEGORY SLIDER (only inside menu)
-   - .tabs-slider is sticky inside menu view
+  CATEGORY SLIDER (inside menu) — STICKY behavior
 -----------------------------*/
 
-/* Обёртка слайдера категорий (скроллится вместе со страницей) */
+/* tabs-slider: STICKY — when it reaches top it stays visible at top;
+   when you scroll back up above its original spot it returns to place */
 .tabs-slider{
-  position: relative; /* НЕ фиксируем, пусть движется вместе со страницей */
-  top: auto;
-  z-index: auto;
+  position: sticky;
+  top: 72px; /* keeps space for header */
+  z-index: 40;
   display:flex;
   align-items:center;
   gap:8px;
   margin: 18px 0;
   padding: 8px 6px;
-  background: transparent;
+  background: transparent; /* visual bg applied to track below */
   border-radius: var(--radius);
 }
 
-/* сам трек — горизонтальная лента */
+/* track */
 .tabs-track{
   display:flex;
   gap:10px;
@@ -164,24 +155,19 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 }
 .tabs-track::-webkit-scrollbar{ display:none; }
 
-/* стрелки */
-.tabs-arrow{
-  background:#fff;border:none;border-radius:999px;width:36px;height:36px;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.08);font-size:18px;
-}
-.tabs-arrow:active{transform:scale(.98);}
+/* arrows */
+.tabs-arrow{ background:#fff; border:none; border-radius:999px; width:36px; height:36px; display:grid; place-items:center; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.08); font-size:18px; }
+.tabs-arrow:active{ transform:scale(.98); }
 
-/* track-specific visual: внутри меню хотим немного фонового оттенка */
+/* inside menu view we give the track a bg to match page bg and rounded pill */
 #menuView .tabs-track{
   background: var(--bg);
   border-radius: 12px;
   padding: 8px;
 }
 
-/* track buttons keep original .tab look but force no-wrap */
-.tabs-track .tab{
-  white-space:nowrap;
-  flex:0 0 auto;
-}
+/* make tabs not wrap inside track */
+.tabs-track .tab{ white-space:nowrap; flex:0 0 auto; }
 </style>
 </head>
 <body>
@@ -212,7 +198,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
     </div>
 
     <div id="menuView" class="spa-view" style="display:none;">
-      <!-- СЛАЙДЕР КАТЕГОРИЙ (внутри menuView; id="tabs" оставлен для совместимости JS) -->
+      <!-- CATEGORY SLIDER (inside menu view) -->
       <div class="tabs-slider" aria-hidden="false">
         <button class="tabs-arrow left" id="catPrev" aria-label="Назад">❮</button>
         <div id="tabs" class="tabs-track" aria-label="Категорії" role="tablist"></div>
@@ -292,7 +278,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 <img id="miniLightboxImg" alt="" />
 
 <script>
-/* ========== SPA навигация (не меняет логику, просто переключает views) ========== */
+/* ========== SPA navigation ========== */
 (function initSPA(){
   const mainTabs = document.querySelectorAll('#mainTabs .tab');
   const views = {
@@ -306,33 +292,34 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       tab.classList.add('active');
       const view = tab.getAttribute('data-view');
       Object.keys(views).forEach(v => { views[v].style.display = (v===view ? 'block' : 'none'); });
-      // если показали меню — захотим перерендерить/инициализировать слайдер (если уже загружено)
       if(view === 'menu') {
-        try { if(typeof renderSlider === 'function' && window.lastRenderedProducts) renderSlider(window.lastRenderedProducts); } catch(e){ /* пусто */ }
+        try { if(typeof renderSlider === 'function' && window.lastRenderedProducts) renderSlider(window.lastRenderedProducts); } catch(e){}
+        // ensure arrows visibility after possible re-render
+        setTimeout(updateCategoryArrows, 120);
       }
     });
   });
 })();
 
-/* ========== Твой оригинальный JS (весь, без изменений) ========== */
-/* ========== КОНФІГ ========== */
+/* ========== ORIGINAL JS (menu, cart, slider) ========== */
+/* CONFIG */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
-const LIQPAY_API = '/.netlify/functions/liqpay'; // лишається на майбутнє, поки не використовується
+const LIQPAY_API = '/.netlify/functions/liqpay';
 const IMG_FALLBACK = '/images/noimage.png';
 
-/* ========== СТЕЙТ ========== */
+/* STATE */
 let allProducts = [];
 let categories = [];
 let currentCategory = null;
 let cart = JSON.parse(localStorage.getItem('sushi_cart') || '[]');
 
-/* ========== УТИЛІТИ ========== */
+/* UTILS */
 function formatUAH(n){ return Math.round(n) + '₴'; }
 function safeImg(url){ return url ? url : IMG_FALLBACK; }
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-/* ========== ЗАВАНТАЖЕННЯ МЕНЮ ========== */
+/* LOAD MENU */
 async function loadMenu(){
   try{
     const res = await fetch(MENU_API);
@@ -350,39 +337,37 @@ async function loadMenu(){
     renderCategories();
     if(categories.length) showCategory(categories[0]);
     else document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
+    setTimeout(updateCategoryArrows, 120);
   } catch(err){
     console.error('loadMenu error', err);
     document.getElementById('products').innerHTML = `<div style="padding:20px;color:var(--muted)">Помилка при завантаженні меню</div>`;
   }
 }
 
-/* ========== КАТЕГОРІЇ ========== */
+/* RENDER CATEGORIES */
 function renderCategories(){
-  const tabs = document.getElementById('tabs'); tabs.innerHTML='';
+  const tabs = document.getElementById('tabs'); if(!tabs) return; tabs.innerHTML='';
   categories.forEach(cat=>{
     const el = document.createElement('div'); el.className='tab'; el.textContent = cat;
     el.onclick = ()=> showCategory(cat);
     tabs.appendChild(el);
   });
-
-  // обновить стрелки/видимость при изменении категорий
   updateCategoryArrows();
 }
 
-/* ========== ПОКАЗ КАТЕГОРІЇ ========== */
+/* SHOW CATEGORY */
 function showCategory(cat){
   currentCategory = cat;
-  document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.textContent===cat));
+  document.querySelectorAll('#tabs .tab').forEach(t=> t.classList.toggle('active', t.textContent===cat));
   const prods = allProducts.filter(p => (p.category || 'Інше') === cat);
   renderProducts(prods);
   renderSlider(prods);
-  // сохраняем последний рендер для SPA-инициализации
   window.lastRenderedProducts = prods;
 }
 
-/* ========== РЕНДЕР ПРОДУКТІВ ========== */
+/* RENDER PRODUCTS */
 function renderProducts(products){
-  const wrap = document.getElementById('products'); wrap.innerHTML = '';
+  const wrap = document.getElementById('products'); if(!wrap) return; wrap.innerHTML = '';
   if(!products.length){ wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; return; }
   products.forEach(p=>{
     const card = document.createElement('div'); card.className = 'card';
@@ -402,13 +387,14 @@ function renderProducts(products){
   initProductLightbox();
 }
 
-/* ========== СЛАЙДЕР (з мініатюрами) ========== */
+/* SLIDER */
 let sliderInterval = null;
 function renderSlider(products){
   const slider = document.getElementById('slider');
   const thumbs = document.getElementById('thumbs');
-  slider.innerHTML = ''; thumbs.innerHTML = '';
-  if(!products.length) return;
+  if(slider) slider.innerHTML = '';
+  if(thumbs) thumbs.innerHTML = '';
+  if(!products || !products.length) return;
   products.forEach((p,i)=>{
     const s = document.createElement('div'); s.className = 'slide' + (i===0 ? ' active' : '');
     s.innerHTML = `<img src="${safeImg(p.img)}" alt="${escapeHtml(p.name)}" />`;
@@ -433,7 +419,7 @@ function showSlide(n){
 document.getElementById('thumbPrev')?.addEventListener('click', ()=> { document.getElementById('thumbs')?.scrollBy({left:-120,behavior:'smooth'}); });
 document.getElementById('thumbNext')?.addEventListener('click', ()=> { document.getElementById('thumbs')?.scrollBy({left:120,behavior:'smooth'}); });
 
-/* ========== МІНІ-ЛАЙТБОКС ========== */
+/* LIGHTBOX */
 function initProductLightbox(){
   document.querySelectorAll('.product-img, #slider img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
@@ -463,7 +449,7 @@ function openLightbox(imgEl){
   window._miniLb = { close };
 }
 
-/* ========== КОШИК ========== */
+/* CART */
 function addToCartFromProduct(p){
   const id = p.id || p.product_id || p.name;
   const existing = cart.find(c=>c.id === id);
@@ -492,9 +478,8 @@ function updateCartUI(){
     if(listEl) listEl.appendChild(div);
   });
 
-  // делегирование для кнопок
   document.querySelectorAll('.icon-btn').forEach(btn=>{
-    btn.onclick = (e)=>{
+    btn.onclick = ()=>{
       const idx = Number(btn.getAttribute('data-idx'));
       const op = btn.getAttribute('data-op');
       if(op === 'remove'){ cart.splice(idx,1); }
@@ -507,23 +492,23 @@ function updateCartUI(){
   if(document.getElementById('cartCount')) document.getElementById('cartCount').textContent = cart.reduce((a,c)=>a+c.qty,0);
 }
 
-/* открытие/закрытие модалки */
-document.getElementById('openCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.add('open'); document.getElementById('cartModal').setAttribute('aria-hidden','false'); });
-document.getElementById('closeCart').addEventListener('click', ()=> { document.getElementById('cartModal').classList.remove('open'); document.getElementById('cartModal').setAttribute('aria-hidden','true'); });
+/* modal open/close */
+document.getElementById('openCart')?.addEventListener('click', ()=> { document.getElementById('cartModal')?.classList.add('open'); document.getElementById('cartModal')?.setAttribute('aria-hidden','false'); });
+document.getElementById('closeCart')?.addEventListener('click', ()=> { document.getElementById('cartModal')?.classList.remove('open'); document.getElementById('cartModal')?.setAttribute('aria-hidden','true'); });
 
-/* ========== ОФОРМЛЕННЯ ЗАМОВЛЕННЯ ========== */
-document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
+/* CHECKOUT */
+document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   if(cart.length === 0){ alert('Кошик порожній'); return; }
   const name = document.getElementById('custName').value.trim();
   const phone = document.getElementById('custPhone').value.trim();
   const addr = document.getElementById('custAddr').value.trim();
   const note = document.getElementById('custNote').value.trim();
-  const payment = document.querySelector('input[name="payment"]:checked').value;
+  const payment = document.querySelector('input[name="payment"]:checked')?.value;
   if(!name || !phone){ alert("Вкажіть ім'я та телефон"); return; }
 
   const payload = {
     customer: { name, phone, addr, note },
-    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })), // price у гривнях — order.js конвертує в копійки
+    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })),
     total: cart.reduce((s,x)=> s + x.price * x.qty, 0),
     paymentMethod: payment
   };
@@ -532,7 +517,6 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
   if(orderResultEl) orderResultEl.textContent = 'Надсилаємо...';
 
   try {
-    // 1) створюємо замовлення в Poster (через Netlify Function)
     const res = await fetch(ORDER_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -547,15 +531,13 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
       return;
     }
 
-    // якщо готівка — відразу підтверджуємо
     if(payment === 'cash'){
       if(orderResultEl) orderResultEl.textContent = `Замовлення прийнято №${orderId}`;
       cart = []; saveCart(); updateCartUI();
-      setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),1500);
+      setTimeout(()=>document.getElementById('cartModal')?.classList.remove('open'),1500);
       return;
     }
 
-    // якщо онлайн — тимчасово не активна оплата, але замовлення вже створено
     if(orderResultEl) orderResultEl.textContent = `Замовлення створено №${orderId}. Онлайн-оплата тимчасово недоступна.`;
     cart = []; saveCart(); updateCartUI();
 
@@ -565,14 +547,13 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
   }
 });
 
-/* ========== Category slider controls ========== */
+/* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
 const catNext = document.getElementById('catNext');
 const tabsTrack = document.getElementById('tabs');
 
 function updateCategoryArrows(){
   if(!tabsTrack || !catPrev || !catNext) return;
-  // если контента помещается — скрываем стрелки
   if(tabsTrack.scrollWidth <= tabsTrack.clientWidth + 2){
     catPrev.style.display = 'none';
     catNext.style.display = 'none';
@@ -581,23 +562,17 @@ function updateCategoryArrows(){
     catNext.style.display = '';
   }
 }
-
-// кнопки прокрутки
 catPrev?.addEventListener('click', ()=> { if(tabsTrack) tabsTrack.scrollBy({ left: -240, behavior: 'smooth' }); });
 catNext?.addEventListener('click', ()=> { if(tabsTrack) tabsTrack.scrollBy({ left: 240, behavior: 'smooth' }); });
-
-// колесико — горизонтальный скролл
 tabsTrack?.addEventListener('wheel', (e)=>{
   if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){
     e.preventDefault();
     tabsTrack.scrollLeft += e.deltaY;
   }
 });
-
-// обновляем стрелки при ресайзе
 window.addEventListener('resize', ()=> setTimeout(updateCategoryArrows, 80));
 
-/* ========== Доп. UX: show skeletons до загрузки меню (если хочешь, оставить) ========== */
+/* Skeleton loader */
 function showSkeletons(count = 8){
   try{
     const wrap = document.getElementById('products');
@@ -617,14 +592,15 @@ function showSkeletons(count = 8){
         </div>`;
       wrap.appendChild(div);
     }
-  }catch(e){ /* silent */ }
+  }catch(e){}
 }
 showSkeletons();
 
-/* ========== Инициализация загрузки меню и обновления стрелок ========== */
+/* INIT */
 updateCategoryArrows();
+updateCartUI();
 loadMenu();
-setTimeout(updateCategoryArrows, 500); // дополнительная проверка после рендера категорий
+setTimeout(updateCategoryArrows, 500);
 </script>
 </body>
 </html>
