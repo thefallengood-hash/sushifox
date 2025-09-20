@@ -131,12 +131,12 @@ h1{margin:0;font-size:22px;color:var(--accent)}
    when you scroll back up above its original spot it returns to place */
 .tabs-slider{
   position: sticky;
-  top: 72px; /* keeps space for header */
-  z-index: 40;
+  top: 0; /* прилипает к самому верху окна */
+  z-index: 999; /* чтобы точно поверх контента */
   display:flex;
   align-items:center;
   gap:8px;
-  margin: 18px 0;
+  margin: 0; /* можно уменьшить, чтобы не было отступа сверху */
   padding: 8px 6px;
   background: transparent; /* visual bg applied to track below */
   border-radius: var(--radius);
