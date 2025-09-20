@@ -137,17 +137,17 @@ h1{margin:0;font-size:22px;color:var(--accent)}
    - .tabs-slider is sticky inside menu view
 -----------------------------*/
 
-/* Обёртка слайдера категорий (заменяет прежний просто #tabs-блок в menuView) */
+/* Обёртка слайдера категорий (скроллится вместе со страницей) */
 .tabs-slider{
-  position: sticky;
-  top: 72px; /* под шапку */
-  z-index: 40;
+  position: relative; /* НЕ фиксируем, пусть движется вместе со страницей */
+  top: auto;
+  z-index: auto;
   display:flex;
   align-items:center;
   gap:8px;
   margin: 18px 0;
   padding: 8px 6px;
-  background: transparent; /* фон внутри menuView мы регулируем через #menuView #tabs-track, чтобы не менять вид остальных страниц */
+  background: transparent;
   border-radius: var(--radius);
 }
 
