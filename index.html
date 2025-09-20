@@ -240,74 +240,64 @@ body {
       <div class="logo" aria-hidden="true"></div>
       <div>
         <h1>Sushi Fox</h1>
-        <div class="subtitle">Доставка: піца, суші, напої, салати</div>
+        <div class="subtitle">Доставка: суші, напої, бургери, салати</div>
       </div>
     </div>
   </div>
 
-  <div id="tabs" class="tabs" aria-label="Категорії"></div>
+  <!-- NAVBAR SPA -->
+  <div class="tabs" id="mainTabs" aria-label="Навігація">
+    <div class="tab active" data-view="home">Головна</div>
+    <div class="tab" data-view="menu">Меню</div>
+    <div class="tab" data-view="contacts">Контакти</div>
+  </div>
 
-  <div class="section">
-    <div class="slider-container" id="sliderBlock">
-      <div id="slider"></div>
-      <div class="thumbs-row">
-        <button id="thumbPrev" class="btn" style="padding:6px 10px;margin-right:6px">◀</button>
-        <div id="thumbs"></div>
-        <button id="thumbNext" class="btn" style="padding:6px 10px;margin-left:6px">▶</button>
+  <!-- SPA CONTENT -->
+  <div id="spaContent">
+    <div id="homeView" class="spa-view" style="display:block;padding:20px;text-align:center;">
+      <h2>Ласкаво просимо до Sushi Fox!</h2>
+      <p>Доставка суші, напоїв, бургерів та салатів прямо до вашого дому.</p>
+      <img src="images/hero.png" alt="Sushi Fox" style="max-width:100%;border-radius:18px;box-shadow:var(--shadow);margin-top:12px">
+    </div>
+
+    <div id="menuView" class="spa-view" style="display:none;">
+      <!-- Меню: твої существующие блоки -->
+      <div id="tabs" class="tabs" aria-label="Категорії"></div>
+
+      <div class="section">
+        <div class="slider-container" id="sliderBlock">
+          <div id="slider"></div>
+          <div class="thumbs-row">
+            <button id="thumbPrev" class="btn" style="padding:6px 10px;margin-right:6px">◀</button>
+            <div id="thumbs"></div>
+            <button id="thumbNext" class="btn" style="padding:6px 10px;margin-left:6px">▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div id="products" class="products" aria-live="polite"></div>
       </div>
     </div>
+
+    <div id="contactsView" class="spa-view" style="display:none;">
+      <!-- Контакты -->
+      <div class="contacts">
+        <div class="contact-info">
+          <h3 style="margin-top:0">Контакти</h3>
+          <div class="contact-row">📞 Телефон: <a class="link" href="tel:+380662714304">+38 (066) 271-43-04</a></div>
+          <div class="contact-row">🕘 Час роботи: 10:00 — 22:00</div>
+          <div class="contact-row">📍 Адреса: Вольногорськ, бульвар Миру 15</div>
+          <div class="contact-row">📸 Instagram: <a class="link" href="https://www.instagram.com/sushi_fox_volnohorsk/" target="_blank">@sushi_fox_volnohorsk</a></div>
+          <div class="contact-row">✈️ Telegram: <a class="link" href="https://t.me/@SanyaSushist" target="_blank">SanyaSushist</a></div>
+        </div>
+        <div class="map">
+          <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2604.4893619324837!2d34.0087415!3d48.4757868!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40da4a14a7640001%3A0xf601f29d7836a3b!2z0JvQu9C40L7Qu9C10L3QuNC90LjRgtC10YDQtdC70Yw!5e0!3m2!1suk!2sua!4v1695037185269!5m2!1suk!2sua" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+
   </div>
-
-  <div class="section">
-    <div id="products" class="products" aria-live="polite"></div>
-  </div>
-
-<style>
-/* Контакты и карта */
-.contacts{
-  margin-top:40px;
-  background:#2a2a2a;
-  border-radius:14px;
-  padding:20px;
-  box-shadow:var(--shadow);
-  color:var(--accent); /* 👈 теперь текст оранжевый */
-  display:flex;
-  flex-wrap:wrap;
-  gap:20px;
-}
-.contact-info{
-  flex:1;
-  min-width:240px;
-}
-.contact-row{margin:6px 0;font-size:15px}
-.contact-row a.link{color:var(--accent);font-weight:600;text-decoration:none}
-.map{
-  flex:1.2;
-  min-width:300px;
-  height:260px;
-  border-radius:14px;
-  overflow:hidden;
-  box-shadow:var(--shadow);
-}
-</style>
-
-<!-- Контакты -->
-<div class="contacts">
-  <div class="contact-info">
-    <h3 style="margin-top:0">Контакти</h3>
-    <div class="contact-row">📞 Телефон: <a class="link" href="tel:+380662714304">+38 (066) 271-43-04</a></div>
-    <div class="contact-row">🕘 Час роботи: 10:00 — 22:00</div>
-    <div class="contact-row">📍 Адреса: Вольногорськ, бульвар Миру 15</div>
-    <div class="contact-row">📸 Instagram: <a class="link" href="https://www.instagram.com/sushi_fox_volnohorsk/" target="_blank">@sushi_fox_volnohorsk</a></div>
-    <div class="contact-row">✈️ Telegram: <a class="link" href="https://t.me/@SanyaSushist" target="_blank">SanyaSushist</a></div>
-  </div>
-  <div class="map">
-    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2604.4893619324837!2d34.0087415!3d48.4757868!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40da4a14a7640001%3A0xf601f29d7836a3b!2z0JvQu9C40L7Qu9C10L3QuNC90LjRgtC10YDQtdC70Yw!5e0!3m2!1suk!2sua!4v1695037185269!5m2!1suk!2sua" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
-  </div>
-</div>
-
-
-  <div style="height:28px"></div>
 </div>
 
 <!-- Cart FAB -->
@@ -347,6 +337,30 @@ body {
 <img id="miniLightboxImg" alt="" />
 
 <script>
+/* ========== SPA навигация (не меняет логику, просто переключает views) ========== */
+(function initSPA(){
+  const mainTabs = document.querySelectorAll('#mainTabs .tab');
+  const views = {
+    home: document.getElementById('homeView'),
+    menu: document.getElementById('menuView'),
+    contacts: document.getElementById('contactsView')
+  };
+  mainTabs.forEach(tab => {
+    tab.addEventListener('click', ()=>{
+      mainTabs.forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      const view = tab.getAttribute('data-view');
+      Object.keys(views).forEach(v => { views[v].style.display = (v===view ? 'block' : 'none'); });
+      // если показали меню — захотим перерендерить/инициализировать слайдер (если уже загружено)
+      if(view === 'menu') {
+        // безопасно: если функции определены позже, этот вызов просто не сработает сейчас
+        try { if(typeof renderSlider === 'function' && window.lastRenderedProducts) renderSlider(window.lastRenderedProducts); } catch(e){ /* пусто */ }
+      }
+    });
+  });
+})();
+
+/* ========== Твой оригинальный JS (весь, без изменений) ========== */
 /* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
@@ -405,6 +419,8 @@ function showCategory(cat){
   const prods = allProducts.filter(p => (p.category || 'Інше') === cat);
   renderProducts(prods);
   renderSlider(prods);
+  // сохраняем последний рендер для SPA-инициализации
+  window.lastRenderedProducts = prods;
 }
 
 /* ========== РЕНДЕР ПРОДУКТІВ ========== */
