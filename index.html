@@ -232,6 +232,43 @@ body {
   box-shadow:0 30px 70px rgba(0,0,0,.5);
 }
 </style>
+
+<!-- ========== Доп. стили для апгрейда: sticky(категории), skeleton, fly-to-cart ========== -->
+<style>
+/* Закрепляем именно блок категорий (#tabs) — не трогаем mainTabs */
+#tabs {
+  position: sticky;
+  top: 72px; /* оставляет место под шапку / SPA tabs */
+  z-index: 40;
+  background: linear-gradient(transparent, rgba(0,0,0,0.00));
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* Skeleton Loader */
+.card.skeleton {
+  background:#eee;
+  color:transparent;
+  pointer-events:none;
+  min-height:220px;
+}
+.card.skeleton .card-img { background:#ddd; height:160px; }
+.card.skeleton .card-body { display:flex; flex-direction:column; gap:8px; padding:12px; }
+.card.skeleton .card-title, .card.skeleton .card-desc, .card.skeleton .price, .card.skeleton .add-btn {
+  height:14px; border-radius:6px; background:#ddd;
+}
+.card.skeleton .add-btn { width:60px; height:28px; }
+
+/* Fly-to-cart animation */
+.fly-to-cart{
+  position:fixed;
+  z-index:9999;
+  transition: transform 0.6s cubic-bezier(0.5,-0.5,0.5,1.5), opacity 0.4s;
+  pointer-events:none;
+  border-radius:12px;
+  width:80px; height:80px; object-fit:cover;
+}
+</style>
 </head>
 <body>
 <div class="container">
@@ -353,7 +390,6 @@ body {
       Object.keys(views).forEach(v => { views[v].style.display = (v===view ? 'block' : 'none'); });
       // если показали меню — захотим перерендерить/инициализировать слайдер (если уже загружено)
       if(view === 'menu') {
-        // безопасно: если функции определены позже, этот вызов просто не сработает сейчас
         try { if(typeof renderSlider === 'function' && window.lastRenderedProducts) renderSlider(window.lastRenderedProducts); } catch(e){ /* пусто */ }
       }
     });
@@ -607,6 +643,93 @@ document.getElementById('checkoutOrder').addEventListener('click', async ()=>{
     document.getElementById('orderResult').textContent = 'Помилка при оформленні замовлення';
   }
 });
+
+/* ========== ДОП. ФУНКЦИИ ДЛЯ АПГРЕЙДА (SKELETON, FLY-TO-CART, smooth showCategory) ========== */
+
+/* Skeleton: показывает временные карточки, пока загружается меню */
+function showSkeletons(count = 8){
+  try{
+    const wrap = document.getElementById('products');
+    if(!wrap) return;
+    wrap.innerHTML = '';
+    for(let i=0;i<count;i++){
+      const div = document.createElement('div');
+      div.className = 'card skeleton';
+      div.innerHTML = `<div class="card-img"></div>
+        <div class="card-body">
+          <div class="card-title"></div>
+          <div class="card-desc"></div>
+          <div class="card-row">
+            <div class="price"></div>
+            <div class="add-btn"></div>
+          </div>
+        </div>`;
+      wrap.appendChild(div);
+    }
+  }catch(e){ /* silent */ }
+}
+
+/* Monkey-patch showCategory: добавляем плавный скролл (оригинальная логика сохраняется) */
+(function enhanceShowCategory(){
+  if(typeof showCategory !== 'function') {
+    // showCategory будет определён ниже; если ещё нет — дождёмся и переопределим позже
+    // но в нашем случае showCategory уже объявлен выше, поэтому этот блок просто safe-guards
+    return;
+  }
+  const _orig = showCategory;
+  showCategory = function(cat){
+    _orig(cat);
+    const prod = document.getElementById('products');
+    if(prod) prod.scrollIntoView({behavior:'smooth'});
+    // сохраняем последний рендер (уже делает оригинал)
+  };
+})();
+
+/* Monkey-patch addToCartFromProduct чтобы добавить анимацию "летящей карточки" (оригинальная логика вызывается первой) */
+(function patchAddToCart(){
+  if(typeof addToCartFromProduct !== 'function') {
+    // если ещё не определена — будем пытаться после определения
+    // но в текущном коде определена выше, так что обычно сработает
+    return;
+  }
+  const _orig = addToCartFromProduct;
+  addToCartFromProduct = function(p){
+    try { _orig(p); } catch(e){ console.error(e); _orig(p); }
+    // Anim: найти изображение товара — по alt (названию) более надёжно
+    try{
+      const imgs = Array.from(document.querySelectorAll('.product-img'));
+      let srcImgEl = imgs.find(im => {
+        // сравниваем alt (в рендере alt = name), или совпадение по src если есть
+        if(!im) return false;
+        if(im.alt && p.name && im.alt.trim() === p.name.trim()) return true;
+        if(p.img && im.src && im.src.includes(p.img)) return true;
+        return false;
+      }) || imgs[0];
+      if(!srcImgEl) return;
+      const rect = srcImgEl.getBoundingClientRect();
+      const cartEl = document.getElementById('openCart');
+      if(!cartEl) return;
+      const fly = srcImgEl.cloneNode(true);
+      fly.className = 'fly-to-cart';
+      fly.style.top = rect.top + 'px';
+      fly.style.left = rect.left + 'px';
+      fly.style.width = rect.width + 'px';
+      fly.style.height = rect.height + 'px';
+      document.body.appendChild(fly);
+      const cartRect = cartEl.getBoundingClientRect();
+      const dx = cartRect.left + cartRect.width/2 - (rect.left + rect.width/2);
+      const dy = cartRect.top + cartRect.height/2 - (rect.top + rect.height/2);
+      requestAnimationFrame(()=> {
+        fly.style.transform = `translate(${dx}px, ${dy}px) scale(0.12)`;
+        fly.style.opacity = '0';
+      });
+      setTimeout(()=> { try{ fly.remove(); } catch(e){} }, 700);
+    }catch(e){ /* animation is non-critical */ }
+  };
+})();
+
+/* Показываем skeletons до загрузки меню */
+showSkeletons();
 
 /* ========== ІНІЦІАЛІЗАЦІЯ ========== */
 updateCartUI();
