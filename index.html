@@ -434,7 +434,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   });
 })();
 
-/* ========== Твой оригинальный JS (весь, без изменений) ========== */
+/* ========== Твой оригинальный JS (весь, с несколькими дополнениями) ========== */
 /* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
@@ -460,8 +460,22 @@ async function loadMenu(){
     const data = await res.json();
 
     if (data?.products && Array.isArray(data.products)) {
-      allProducts = data.products;
-      categories = Array.isArray(data.categories) && data.categories.length ? data.categories : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
+      // **ФИЛЬТР**: исключаем категорию "Комплектація" и товары с ценой 0
+      const filtered = data.products.filter(p => {
+        const cat = p.category || '';
+        const priceNum = Number(p.price);
+        if(String(cat).trim().toLowerCase() === 'комплектація') return false;
+        if(!isNaN(priceNum) && priceNum === 0) return false;
+        return true;
+      });
+      allProducts = filtered;
+
+      // categories: если Poster вернул категории — используем их, но фильтруем "Комплектація"
+      if(Array.isArray(data.categories) && data.categories.length){
+        categories = data.categories.filter(c => String(c).trim().toLowerCase() !== 'комплектація' && filtered.some(p=> (p.category||'Інше') === c));
+      } else {
+        categories = Array.from(new Set(filtered.map(p=>p.category || 'Інше')));
+      }
     } else {
       allProducts = [];
       categories = [];
@@ -569,11 +583,35 @@ function openLightbox(imgEl){
   clone.style.transition='transform .35s ease, top .35s ease, left .35s ease, width .35s ease, height .35s ease, opacity .2s ease';
   clone.style.transformOrigin='center center'; clone.style.borderRadius='12px'; clone.style.zIndex=9999; clone.style.cursor='pointer'; clone.style.objectFit='cover';
   document.body.appendChild(clone);
-  const vw=window.innerWidth,vh=window.innerHeight; const maxW=vw*0.9,maxH=vh*0.9;
-  const scale=Math.min(1.8,maxW/rect.width,maxH/rect.height);
+
+  const vw=window.innerWidth,vh=window.innerHeight;
+  const maxW=vw*0.9,maxH=vh*0.9;
   const centerX=rect.left+rect.width/2, centerY=rect.top+rect.height/2;
   const dx=(vw/2)-centerX, dy=(vh/2)-centerY;
-  requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; clone.style.display='block'; });
+
+  // Не увеличиваем изображение выше его натурального размера:
+  const imgTemp = new Image();
+  imgTemp.src = imgEl.src;
+  imgTemp.onload = function(){
+    const naturalW = imgTemp.naturalWidth || rect.width;
+    const naturalH = imgTemp.naturalHeight || rect.height;
+
+    // желаемый масштаб для попадания в окно (без учета натурального размера)
+    const desiredScale = Math.min(maxW/rect.width, maxH/rect.height, 1.8);
+
+    // ограничение, чтобы не увеличивать больше натурального размера
+    const notUpscaleLimit = Math.min(naturalW/rect.width, naturalH/rect.height, 1.0);
+
+    const finalScale = Math.min(desiredScale, notUpscaleLimit);
+
+    requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${finalScale})`; clone.style.display='block'; });
+  };
+  imgTemp.onerror = function(){
+    // fallback: старая логика, но без гарантии про натуральный размер
+    const scale=Math.min(1.8,maxW/rect.width,maxH/rect.height);
+    requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; clone.style.display='block'; });
+  };
+
   function close(){ clone.style.transform='translate(0px, 0px) scale(1)'; setTimeout(()=> { if(clone.parentElement) clone.parentElement.removeChild(clone); }, 350); window._miniLb=null; document.removeEventListener('click', outsideHandler); window.removeEventListener('keydown', keyHandler); }
   function outsideHandler(e){ if(e.target !== clone) close(); }
   function keyHandler(e){ if(e.key === 'Escape') close(); }
