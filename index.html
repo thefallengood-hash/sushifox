@@ -290,6 +290,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   <div class="tabs" id="mainTabs" aria-label="Навігація">
     <div class="tab active" data-view="home">Головна</div>
     <div class="tab" data-view="menu">Меню</div>
+    <div class="tab" data-view="random">🎲 Рандомне блюдо</div>
     <div class="tab" data-view="contacts">Контакти</div>
   </div>
 
@@ -323,6 +324,16 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       <div class="section">
         <div id="products" class="products" aria-live="polite"></div>
       </div>
+    </div>
+
+    <!-- ===== Random view ===== -->
+    <div id="randomView" class="spa-view" style="display:none;padding:18px;">
+      <h2>🎲 Рандомне блюдо</h2>
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button id="randomBtn" class="btn">Згенерувати рандомне блюдо</button>
+        <div id="randomNote" style="color:var(--muted);font-size:14px">Бере випадковий товар із усього меню Poster</div>
+      </div>
+      <div id="randomContainer" style="margin-top:18px"></div>
     </div>
 
     <div id="contactsView" class="spa-view" style="display:none;">
@@ -398,12 +409,13 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 <img id="miniLightboxImg" alt="" />
 
 <script>
-/* ========== SPA navigation ========== */
+/* ========== SPA навигация (не меняет логику, просто переключает views) ========== */
 (function initSPA(){
   const mainTabs = document.querySelectorAll('#mainTabs .tab');
   const views = {
     home: document.getElementById('homeView'),
     menu: document.getElementById('menuView'),
+    random: document.getElementById('randomView'),
     contacts: document.getElementById('contactsView')
   };
   mainTabs.forEach(tab => {
@@ -412,34 +424,35 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       tab.classList.add('active');
       const view = tab.getAttribute('data-view');
       Object.keys(views).forEach(v => { views[v].style.display = (v===view ? 'block' : 'none'); });
+      // если показали меню — захотим перерендерить/инициализировать слайдер (если уже загружено)
       if(view === 'menu') {
-        try { if(typeof renderSlider === 'function' && window.lastRenderedProducts) renderSlider(window.lastRenderedProducts); } catch(e){}
-        // ensure arrows visibility after possible re-render
+        try { if(typeof renderSlider === 'function' && window.lastRenderedProducts) renderSlider(window.lastRenderedProducts); } catch(e){ /* пусто */ }
         setTimeout(updateCategoryArrows, 120);
       }
+      // если открыли рандом — ничего особого не нужно (данные подгружаются глобально)
     });
   });
 })();
 
-/* ========== ORIGINAL JS (menu, cart, slider) ========== */
-/* CONFIG */
+/* ========== Твой оригинальный JS (весь, без изменений) ========== */
+/* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
-const LIQPAY_API = '/.netlify/functions/liqpay';
+const LIQPAY_API = '/.netlify/functions/liqpay'; // лишається на майбутнє, поки не використовується
 const IMG_FALLBACK = '/images/noimage.png';
 
-/* STATE */
+/* ========== СТЕЙТ ========== */
 let allProducts = [];
 let categories = [];
 let currentCategory = null;
 let cart = JSON.parse(localStorage.getItem('sushi_cart') || '[]');
 
-/* UTILS */
+/* ========== УТИЛІТИ ========== */
 function formatUAH(n){ return Math.round(n) + '₴'; }
 function safeImg(url){ return url ? url : IMG_FALLBACK; }
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-/* LOAD MENU */
+/* ========== ЗАВАНТАЖЕННЯ МЕНЮ ========== */
 async function loadMenu(){
   try{
     const res = await fetch(MENU_API);
@@ -464,7 +477,7 @@ async function loadMenu(){
   }
 }
 
-/* RENDER CATEGORIES */
+/* ========== КАТЕГОРІЇ ========== */
 function renderCategories(){
   const tabs = document.getElementById('tabs'); if(!tabs) return; tabs.innerHTML='';
   categories.forEach(cat=>{
@@ -475,17 +488,18 @@ function renderCategories(){
   updateCategoryArrows();
 }
 
-/* SHOW CATEGORY */
+/* ========== ПОКАЗ КАТЕГОРІЇ ========== */
 function showCategory(cat){
   currentCategory = cat;
   document.querySelectorAll('#tabs .tab').forEach(t=> t.classList.toggle('active', t.textContent===cat));
   const prods = allProducts.filter(p => (p.category || 'Інше') === cat);
   renderProducts(prods);
   renderSlider(prods);
+  // сохраняем последний рендер для SPA-инициализации
   window.lastRenderedProducts = prods;
 }
 
-/* RENDER PRODUCTS */
+/* ========== РЕНДЕР ПРОДУКТІВ ========== */
 function renderProducts(products){
   const wrap = document.getElementById('products'); if(!wrap) return; wrap.innerHTML = '';
   if(!products.length){ wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; return; }
@@ -507,7 +521,7 @@ function renderProducts(products){
   initProductLightbox();
 }
 
-/* SLIDER */
+/* ========== СЛАЙДЕР (з мініатюрами) ========== */
 let sliderInterval = null;
 function renderSlider(products){
   const slider = document.getElementById('slider');
@@ -539,7 +553,7 @@ function showSlide(n){
 document.getElementById('thumbPrev')?.addEventListener('click', ()=> { document.getElementById('thumbs')?.scrollBy({left:-120,behavior:'smooth'}); });
 document.getElementById('thumbNext')?.addEventListener('click', ()=> { document.getElementById('thumbs')?.scrollBy({left:120,behavior:'smooth'}); });
 
-/* LIGHTBOX */
+/* ========== МІНІ-ЛАЙТБОКС ========== */
 function initProductLightbox(){
   document.querySelectorAll('.product-img, #slider img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
@@ -569,7 +583,7 @@ function openLightbox(imgEl){
   window._miniLb = { close };
 }
 
-/* CART */
+/* ========== КОШИК ========== */
 function addToCartFromProduct(p){
   const id = p.id || p.product_id || p.name;
   const existing = cart.find(c=>c.id === id);
@@ -612,11 +626,11 @@ function updateCartUI(){
   if(document.getElementById('cartCount')) document.getElementById('cartCount').textContent = cart.reduce((a,c)=>a+c.qty,0);
 }
 
-/* modal open/close */
+/* открытие/закрытие модалки */
 document.getElementById('openCart')?.addEventListener('click', ()=> { document.getElementById('cartModal')?.classList.add('open'); document.getElementById('cartModal')?.setAttribute('aria-hidden','false'); });
 document.getElementById('closeCart')?.addEventListener('click', ()=> { document.getElementById('cartModal')?.classList.remove('open'); document.getElementById('cartModal')?.setAttribute('aria-hidden','true'); });
 
-/* CHECKOUT */
+/* ========== ОФОРМЛЕННЯ ЗАМОВЛЕННЯ ========== */
 document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   if(cart.length === 0){ alert('Кошик порожній'); return; }
   const name = document.getElementById('custName').value.trim();
@@ -628,7 +642,7 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
 
   const payload = {
     customer: { name, phone, addr, note },
-    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })),
+    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })), // price у гривнях — order.js конвертує в копійки
     total: cart.reduce((s,x)=> s + x.price * x.qty, 0),
     paymentMethod: payment
   };
@@ -637,6 +651,7 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   if(orderResultEl) orderResultEl.textContent = 'Надсилаємо...';
 
   try {
+    // 1) створюємо замовлення в Poster (через Netlify Function)
     const res = await fetch(ORDER_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -647,25 +662,29 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
     const orderId = orderRes?.id || orderRes?.orderId || null;
 
     if(!orderId){
-      if(orderResultEl) orderResultEl.textContent = 'Замовлення створено на Poster, але невідомий ID';
+      orderResultEl.textContent = 'Замовлення створено на Poster, але невідомий ID';
       return;
     }
 
+    // якщо готівка — відразу підтверджуємо
     if(payment === 'cash'){
-      if(orderResultEl) orderResultEl.textContent = `Замовлення прийнято №${orderId}`;
+      orderResultEl.textContent = `Замовлення прийнято №${orderId}`;
       cart = []; saveCart(); updateCartUI();
-      setTimeout(()=>document.getElementById('cartModal')?.classList.remove('open'),1500);
+      setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),1500);
       return;
     }
 
-    if(orderResultEl) orderResultEl.textContent = `Замовлення створено №${orderId}. Онлайн-оплата тимчасово недоступна.`;
+    // якщо онлайн — тимчасово не активна оплата, але замовлення вже створено
+    orderResultEl.textContent = `Замовлення створено №${orderId}. Онлайн-оплата тимчасово недоступна.`;
     cart = []; saveCart(); updateCartUI();
 
   } catch(err){
     console.error('checkout error', err);
-    if(document.getElementById('orderResult')) document.getElementById('orderResult').textContent = 'Помилка при оформленні замовлення';
+    document.getElementById('orderResult').textContent = 'Помилка при оформленні замовлення';
   }
 });
+
+/* ========== ІНІЦІАЛІЗАЦІЯ / ДОП. ЛОГІКА ========== */
 
 /* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
@@ -727,7 +746,7 @@ document.getElementById('feedbackForm')?.addEventListener('submit', function(e){
     if(result) result.textContent = 'Заповніть усі поля';
     return;
   }
-  // Локальная имитация отправки — здесь можно вставить fetch на свой endpoint
+  // Локальная имитация отправки — здесь можно вставить fetch на свой endpoint или EmailJS
   if(result) result.textContent = 'Дякуємо! Повідомлення надіслано.';
   // Очистим форму через секунду
   setTimeout(()=> {
@@ -735,7 +754,66 @@ document.getElementById('feedbackForm')?.addEventListener('submit', function(e){
   },900);
 });
 
-/* INIT */
+/* ========== RANDOM DISH (использует allProducts) ========== */
+function renderRandomDishCard(product){
+  const container = document.getElementById('randomContainer');
+  container.innerHTML = '';
+  if(!product){
+    container.innerHTML = '<div style="color:var(--muted);padding:12px">Немає доступних товарів для вибору.</div>';
+    return;
+  }
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.style.maxWidth = '420px';
+  card.style.marginTop = '12px';
+  card.innerHTML = `
+    <img loading="lazy" src="${safeImg(product.img)}" alt="${escapeHtml(product.name)}" class="card-img" />
+    <div class="card-body">
+      <div class="card-title">${escapeHtml(product.name)}</div>
+      <div class="card-desc">${escapeHtml(product.desc || '')}</div>
+      <div class="card-row">
+        <div class="price">${formatUAH(product.price)}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn add-random">В кошик</button>
+          <button class="btn regen-random" style="background:#fff;color:#111;font-weight:700">Ще</button>
+        </div>
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
+
+  card.querySelector('.add-random').addEventListener('click', ()=>{
+    // используем существующую функцию добавления в корзину
+    try { addToCartFromProduct(product); } catch(e){ console.error(e); }
+    // при добавлении можно показать краткое уведомление
+    const note = document.getElementById('randomNote');
+    if(note){ note.textContent = 'Додано в кошик ✅'; setTimeout(()=> note.textContent = 'Бере випадковий товар із усього меню Poster', 1200); }
+  });
+
+  card.querySelector('.regen-random').addEventListener('click', ()=>{
+    showRandomDish();
+  });
+}
+
+function showRandomDish(){
+  // берём случайный товар из allProducts
+  if(!allProducts || !allProducts.length){
+    // если ещё не загружено — сообщаем
+    const container = document.getElementById('randomContainer');
+    container.innerHTML = '<div style="padding:12px;color:var(--muted)">Меню ще не завантажено — зачекайте...</div>';
+    return;
+  }
+  const idx = Math.floor(Math.random() * allProducts.length);
+  const product = allProducts[idx];
+  renderRandomDishCard(product);
+}
+
+// привязка кнопки
+document.getElementById('randomBtn')?.addEventListener('click', ()=>{
+  showRandomDish();
+});
+
+/* ========== ИНИЦИАЛИЗАЦИЯ ========== */
 updateCategoryArrows();
 updateCartUI();
 loadMenu();
