@@ -63,11 +63,54 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .btn{background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
 .btn:active{transform:translateY(1px)}
 
-/* Cart FAB */
-.cart-fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:18px;background:linear-gradient(120deg,var(--accent),#ffb347);display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;cursor:pointer;box-shadow:var(--shadow);z-index:60}
+/* Cart FAB (плавающая кнопка) */
+.cart-fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:18px;background:linear-gradient(120deg,var(--accent),#ffb347);display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;cursor:pointer;box-shadow:var(--shadow);z-index:1101}
 .cart-count{position:absolute;top:-6px;right:-6px;background:#071023;color:#fff;border-radius:999px;padding:3px 7px;font-size:12px}
 
-/* Modal / sheet */
+/* ========== SLIDE-IN CART PANEL ========== */
+#cartOverlay{
+  position:fixed; inset:0; background:rgba(2,6,23,.45);
+  opacity:0; visibility:hidden; transition:opacity .25s;
+  z-index:1100;
+}
+#cartOverlay.active{ opacity:1; visibility:visible; }
+
+#cartPanel{
+  position:fixed; top:0; right:-420px; width:380px; max-width:92vw; height:100%;
+  background:#fff; color:#0b1220; box-shadow:-30px 0 60px rgba(2,6,23,.35);
+  border-left: 1px solid rgba(0,0,0,.04);
+  z-index:1101; transition:right .32s cubic-bezier(.2,.9,.2,1);
+  display:flex; flex-direction:column; padding:18px; gap:12px;
+}
+#cartPanel.active{ right:0; }
+
+#cartPanel .panel-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+#cartPanel h3{ margin:0; color:var(--accent); font-size:18px; }
+#cartPanel .close-btn{ background:none;border:none;font-size:20px;cursor:pointer;color:#333; }
+
+#cartPanelItems{ display:flex; flex-direction:column; gap:10px; overflow:auto; padding-right:6px; flex:1; }
+.cart-panel-item{
+  display:flex; gap:10px; align-items:center; background:#fbfbfb; padding:8px; border-radius:10px;
+}
+.cart-panel-item img{ width:60px; height:60px; object-fit:cover; border-radius:8px; }
+.cart-panel-item .meta{ flex:1; }
+.cart-panel-item .meta .name{ font-weight:700; color:var(--accent); margin-bottom:6px; }
+.cart-panel-item .meta .qty{ color:var(--muted); font-size:13px; }
+.cart-panel-item .meta .price{ font-weight:800; color:var(--accent); margin-top:6px; }
+
+.cart-panel-controls{ display:flex; align-items:center; gap:8px; margin-top:6px; justify-content:flex-end; }
+
+#cartPanelFooter{ border-top:1px solid #eee; padding-top:12px; display:flex; flex-direction:column; gap:8px; }
+#cartPanelFooter .total-row{ display:flex; justify-content:space-between; align-items:center; font-weight:900; font-size:18px; color:var(--accent); }
+#cartPanelFooter .btn-checkout{ width:100%; padding:10px 12px; border-radius:10px; border:none; cursor:pointer; font-weight:800; }
+
+/* make panel responsive */
+@media(max-width:520px){
+  #cartPanel{ width:100%; right:-100%; }
+  #cartPanel.active{ right:0; }
+}
+
+/* Modal / sheet (старый стиль оставлен для совместимости, но мы его не используем) */
 .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.45);z-index:80;padding:16px}
 .modal.open{display:flex}
 .sheet{width:min(980px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;padding:12px;box-shadow:0 30px 60px rgba(2,6,23,.3);position:relative}
@@ -75,8 +118,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .sheet-grid{display:grid;grid-template-columns:1fr 340px;gap:12px}
 @media(max-width:900px){.sheet-grid{grid-template-columns:1fr}}
 .cart-list{display:flex;flex-direction:column;gap:10px;padding:6px}
-.cart-item{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;background:#fbfbfb;padding:8px;border-radius:10px}
-.cart-item img{width:72px;height:72px;object-fit:cover;border-radius:8px}
 
 /* Cart text classes */
 .cart-name{font-weight:700;color:var(--accent)}
@@ -393,38 +434,34 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   </div>
 </div>
 
-<!-- Cart FAB -->
+<!-- Cart FAB (плавающая кнопка) -->
 <div class="cart-fab" id="openCart" title="Кошик">🛒<div class="cart-count" id="cartCount">0</div></div>
 
-<!-- Cart Modal -->
-<div class="modal" id="cartModal" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="sheet">
-    <div class="close-x" id="closeCart" title="Закрити">✕</div>
+<!-- SLIDE-IN CART PANEL + OVERLAY -->
+<div id="cartOverlay" aria-hidden="true"></div>
+
+<aside id="cartPanel" aria-hidden="true" role="dialog" aria-label="Кошик">
+  <div class="panel-header">
     <h3>Ваше замовлення</h3>
-    <div class="sheet-grid">
-      <div>
-        <div id="cartList" class="cart-list"></div>
-      </div>
-      <div class="summary">
-        <input id="custName" class="input" placeholder="Ваше ім'я" />
-        <input id="custPhone" class="input" placeholder="Телефон" />
-        <input id="custAddr" class="input" placeholder="Адреса доставки" />
-        <textarea id="custNote" class="input" placeholder="Коментар" rows="3"></textarea>
+    <button class="close-btn" id="cartPanelClose" title="Закрити">✕</button>
+  </div>
 
-        <div style="display:flex;gap:8px;align-items:center">
-          <label style="flex:1"><input type="radio" name="payment" value="online" checked/> Оплата карткою</label>
-          <label style="flex:1"><input type="radio" name="payment" value="cash"/> Оплата при отриманні</label>
-        </div>
+  <div id="cartPanelItems" aria-live="polite">
+    <!-- Элементы корзины будут добавлены сюда -->
+  </div>
 
-        <button id="checkoutOrder" class="btn" style="width:100%">Замовити</button>
-        <div id="orderResult" style="font-weight:700;margin-top:8px"></div>
-        <div class="total" style="margin-top:8px;display:flex;justify-content:space-between;font-weight:800">
-          <span>Разом</span><span id="cartTotal">0₴</span>
-        </div>
+  <div id="cartPanelFooter">
+    <div style="display:flex;gap:8px;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:#666">Разом</span>
+        <span id="cartPanelTotal" style="font-weight:900;color:var(--accent)">0₴</span>
       </div>
+      <!-- Оставляем форму/кнопки заказа в панеле (но основная обработка использует существующий checkoutOrder id) -->
+      <button id="checkoutOrder" class="btn btn-checkout" style="background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff">Оформити замовлення</button>
+      <div id="orderResult" style="font-weight:700;margin-top:8px;color:#333"></div>
     </div>
   </div>
-</div>
+</aside>
 
 <!-- Mini lightbox clone -->
 <img id="miniLightboxImg" alt="" />
@@ -455,11 +492,11 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   });
 })();
 
-/* ========== Твой оригинальный JS (весь, без изменений, с фильтром категорий) ========== */
+/* ========== ТОТ ЖЕ JS (с фильтром категорий) ========== */
 /* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
-const LIQPAY_API = '/.netlify/functions/liqpay'; // лишається на майбутнє, поки не використовується
+const LIQPAY_API = '/.netlify/functions/liqpay';
 const IMG_FALLBACK = '/images/noimage.png';
 
 /* ========== СТЕЙТ ========== */
@@ -483,18 +520,15 @@ async function loadMenu(){
     if (data?.products && Array.isArray(data.products)) {
       allProducts = data.products;
 
-      // raw categories: если Poster вернул категории — используем их, иначе строим из продуктов
       const rawCategories = Array.isArray(data.categories) && data.categories.length
         ? data.categories
         : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
 
-      // ФИЛЬТР: убираем категории, в которых нет товаров с ценой > 0,
-      // но **оставляем** категорию "Комплектація" (независимо от содержимого).
+      // ФИЛЬТР: убираем категории без товаров с ценой > 0, но оставляем "Комплектація"
       categories = rawCategories.filter(cat=>{
         try {
           const norm = String(cat).trim().toLowerCase();
-          if(norm === 'комплектація') return true; // всегда держим
-          // в категории должен быть хотя бы 1 товар с ценой > 0
+          if(norm === 'комплектація') return true;
           return allProducts.some(p => {
             const pCat = (p.category || 'Інше');
             return String(pCat) === String(cat) && Number(p.price) > 0;
@@ -502,9 +536,7 @@ async function loadMenu(){
         } catch(e) { return false; }
       });
 
-      // на всякий случай, если после фильтра ничего не осталось — восстановим хотя бы одну
       if(!categories.length){
-        // если есть продукты с ценой >0 — используем их категории
         const nonZeroCats = Array.from(new Set(allProducts.filter(p=>Number(p.price)>0).map(p=>p.category || 'Інше')));
         categories = nonZeroCats.length ? nonZeroCats : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
       }
@@ -516,7 +548,6 @@ async function loadMenu(){
     }
     renderCategories();
 
-    // если текущая категория была удалена фильтром — переключимся на первую
     if(categories.length){
       if(!currentCategory || !categories.includes(currentCategory)){
         showCategory(categories[0]);
@@ -552,7 +583,6 @@ function showCategory(cat){
   const prods = allProducts.filter(p => (p.category || 'Інше') === cat);
   renderProducts(prods);
   renderSlider(prods);
-  // сохраняем последний рендер для SPA-инициализации
   window.lastRenderedProducts = prods;
 }
 
@@ -578,7 +608,7 @@ function renderProducts(products){
   initProductLightbox();
 }
 
-/* ========== СЛАЙДЕР (з мініатюрами) ========== */
+/* ========== СЛАЙДЕР ========== */
 let sliderInterval = null;
 function renderSlider(products){
   const slider = document.getElementById('slider');
@@ -649,26 +679,56 @@ function addToCartFromProduct(p){
   saveCart(); updateCartUI();
 }
 function saveCart(){ localStorage.setItem('sushi_cart', JSON.stringify(cart)); }
+
+/* Обновлённый updateCartUI: обновляет панель и плавающую кнопку */
 function updateCartUI(){
+  // обновляем счётчик на FAB
+  if(document.getElementById('cartCount')) document.getElementById('cartCount').textContent = cart.reduce((a,c)=>a+c.qty,0);
+
+  // обновляем старый список (если есть)
   const listEl = document.getElementById('cartList'); if(listEl) listEl.innerHTML = '';
   cart.forEach((c,i)=>{
-    const div = document.createElement('div'); div.className = 'cart-item';
-    div.innerHTML = `<img src="${safeImg(c.img)}" alt="${escapeHtml(c.name)}"/>
-      <div>
-        <div class="cart-name">${escapeHtml(c.name)}</div>
-        <div class="cart-qty">${formatUAH(c.price)} × ${c.qty}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="cart-total">${formatUAH(c.price * c.qty)}</div>
-        <div style="margin-top:8px">
+    if(listEl){
+      const div = document.createElement('div'); div.className = 'cart-item';
+      div.innerHTML = `<img src="${safeImg(c.img)}" alt="${escapeHtml(c.name)}"/>
+        <div>
+          <div class="cart-name">${escapeHtml(c.name)}</div>
+          <div class="cart-qty">${formatUAH(c.price)} × ${c.qty}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="cart-total">${formatUAH(c.price * c.qty)}</div>
+          <div style="margin-top:8px">
+            <button class="icon-btn" data-idx="${i}" data-op="-1">−</button>
+            <button class="icon-btn" data-idx="${i}" data-op="+1">+</button>
+            <button class="icon-btn" data-idx="${i}" data-op="remove" style="margin-left:6px">✕</button>
+          </div>
+        </div>`;
+      listEl.appendChild(div);
+    }
+  });
+
+  // обновляем панель (новая)
+  const panelItems = document.getElementById('cartPanelItems');
+  if(panelItems) panelItems.innerHTML = '';
+  cart.forEach((c,i)=>{
+    const item = document.createElement('div');
+    item.className = 'cart-panel-item';
+    item.innerHTML = `
+      <img src="${safeImg(c.img)}" alt="${escapeHtml(c.name)}" />
+      <div class="meta">
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="qty">${formatUAH(c.price)} × ${c.qty}</div>
+        <div class="cart-panel-controls">
           <button class="icon-btn" data-idx="${i}" data-op="-1">−</button>
           <button class="icon-btn" data-idx="${i}" data-op="+1">+</button>
           <button class="icon-btn" data-idx="${i}" data-op="remove" style="margin-left:6px">✕</button>
         </div>
-      </div>`;
-    if(listEl) listEl.appendChild(div);
+      </div>
+    `;
+    panelItems.appendChild(item);
   });
 
+  // навесь event listeners для иконок (кол-во/удаление)
   document.querySelectorAll('.icon-btn').forEach(btn=>{
     btn.onclick = ()=>{
       const idx = Number(btn.getAttribute('data-idx'));
@@ -679,27 +739,63 @@ function updateCartUI(){
     };
   });
 
-  if(document.getElementById('cartTotal')) document.getElementById('cartTotal').textContent = formatUAH(cart.reduce((a,c)=>a+c.price*c.qty,0));
-  if(document.getElementById('cartCount')) document.getElementById('cartCount').textContent = cart.reduce((a,c)=>a+c.qty,0);
+  // общая сумма — обновляем везде
+  const total = cart.reduce((a,c)=>a + c.price*c.qty,0);
+  if(document.getElementById('cartTotal')) document.getElementById('cartTotal').textContent = formatUAH(total);
+  if(document.getElementById('cartPanelTotal')) document.getElementById('cartPanelTotal').textContent = formatUAH(total);
 }
 
-/* открытие/закрытие модалки */
-document.getElementById('openCart')?.addEventListener('click', ()=> { document.getElementById('cartModal')?.classList.add('open'); document.getElementById('cartModal')?.setAttribute('aria-hidden','false'); });
-document.getElementById('closeCart')?.addEventListener('click', ()=> { document.getElementById('cartModal')?.classList.remove('open'); document.getElementById('cartModal')?.setAttribute('aria-hidden','true'); });
+/* ========== ОТКРЫТИЕ/ЗАКРЫТИЕ ПАНЕЛИ ========== */
+const cartOverlay = document.getElementById('cartOverlay');
+const cartPanel = document.getElementById('cartPanel');
+const openCartBtn = document.getElementById('openCart');
+const cartPanelClose = document.getElementById('cartPanelClose');
 
-/* ========== ОФОРМЛЕННЯ ЗАМОВЛЕННЯ ========== */
+function openCartPanel(){
+  cartPanel.classList.add('active');
+  cartOverlay.classList.add('active');
+  cartPanel.setAttribute('aria-hidden','false');
+  cartOverlay.setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  // обновим UI перед показом
+  updateCartUI();
+}
+function closeCartPanel(){
+  cartPanel.classList.remove('active');
+  cartOverlay.classList.remove('active');
+  cartPanel.setAttribute('aria-hidden','true');
+  cartOverlay.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+}
+
+openCartBtn?.addEventListener('click', openCartPanel);
+cartPanelClose?.addEventListener('click', closeCartPanel);
+cartOverlay?.addEventListener('click', closeCartPanel);
+document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPanel(); });
+
+/* ========== ОФОРМЛЕНИЕ ЗАМОВЛЕННЯ ========== */
+/* оставил обработчик checkoutOrder — он использует текущую переменную cart и обновляет UI */
 document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   if(cart.length === 0){ alert('Кошик порожній'); return; }
-  const name = document.getElementById('custName').value.trim();
-  const phone = document.getElementById('custPhone').value.trim();
-  const addr = document.getElementById('custAddr').value.trim();
-  const note = document.getElementById('custNote').value.trim();
-  const payment = document.querySelector('input[name="payment"]:checked')?.value;
-  if(!name || !phone){ alert("Вкажіть ім'я та телефон"); return; }
+  const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
+  const phone = document.getElementById('custPhone') ? document.getElementById('custPhone').value.trim() : '';
+  const addr = document.getElementById('custAddr') ? document.getElementById('custAddr').value.trim() : '';
+  const note = document.getElementById('custNote') ? document.getElementById('custNote').value.trim() : '';
+  const payment = document.querySelector('input[name="payment"]:checked')?.value || 'online';
+  if(!name || !phone){
+    // если форма не присутствует в UI (мы оформляем прямо из панели) — попросим ввести минимум
+    if(!document.getElementById('custName')){
+      const n = prompt('Вкажіть ваше ім\'я');
+      const ph = prompt('Вкажіть телефон');
+      if(!n || !ph){ alert('Потрібні ім\'я та телефон'); return; }
+    } else {
+      alert("Вкажіть ім'я та телефон"); return;
+    }
+  }
 
   const payload = {
     customer: { name, phone, addr, note },
-    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })), // price у гривнях — order.js конвертує в копійки
+    items: cart.map(c => ({ id: c.id, qty: c.qty, price: c.price })),
     total: cart.reduce((s,x)=> s + x.price * x.qty, 0),
     paymentMethod: payment
   };
@@ -708,7 +804,6 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   if(orderResultEl) orderResultEl.textContent = 'Надсилаємо...';
 
   try {
-    // 1) створюємо замовлення в Poster (через Netlify Function)
     const res = await fetch(ORDER_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -719,29 +814,27 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
     const orderId = orderRes?.id || orderRes?.orderId || null;
 
     if(!orderId){
-      orderResultEl.textContent = 'Замовлення створено на Poster, але невідомий ID';
+      if(orderResultEl) orderResultEl.textContent = 'Замовлення створено на Poster, але невідомий ID';
       return;
     }
 
-    // якщо готівка — відразу підтверджуємо
     if(payment === 'cash'){
-      orderResultEl.textContent = `Замовлення прийнято №${orderId}`;
+      if(orderResultEl) orderResultEl.textContent = `Замовлення прийнято №${orderId}`;
       cart = []; saveCart(); updateCartUI();
-      setTimeout(()=>document.getElementById('cartModal').classList.remove('open'),1500);
+      setTimeout(()=> closeCartPanel(),1500);
       return;
     }
 
-    // якщо онлайн — тимчасово не активна оплата, але замовлення вже створено
-    orderResultEl.textContent = `Замовлення створено №${orderId}. Онлайн-оплата тимчасово недоступна.`;
+    if(orderResultEl) orderResultEl.textContent = `Замовлення створено №${orderId}. Онлайн-оплата тимчасово недоступна.`;
     cart = []; saveCart(); updateCartUI();
 
   } catch(err){
     console.error('checkout error', err);
-    document.getElementById('orderResult').textContent = 'Помилка при оформленні замовлення';
+    if(document.getElementById('orderResult')) document.getElementById('orderResult').textContent = 'Помилка при оформленні замовлення';
   }
 });
 
-/* ========== ІНІЦІАЛІЗАЦІЯ / ДОП. ЛОГІКА ========== */
+/* ========== ІНІЦІАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
 
 /* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
@@ -803,9 +896,7 @@ document.getElementById('feedbackForm')?.addEventListener('submit', function(e){
     if(result) result.textContent = 'Заповніть усі поля';
     return;
   }
-  // Локальная имитация отправки — здесь можно вставить fetch на свой endpoint или EmailJS
   if(result) result.textContent = 'Дякуємо! Повідомлення надіслано.';
-  // Очистим форму через секунду
   setTimeout(()=> {
     try{ document.getElementById('fbName').value=''; document.getElementById('fbEmail').value=''; document.getElementById('fbMessage').value=''; }catch(e){}
   },900);
