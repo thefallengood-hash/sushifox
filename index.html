@@ -455,7 +455,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   });
 })();
 
-/* ========== Твой оригинальный JS (весь, без изменений) ========== */
+/* ========== Твой оригинальный JS (весь, без изменений, с фильтром категорий) ========== */
 /* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
@@ -482,15 +482,51 @@ async function loadMenu(){
 
     if (data?.products && Array.isArray(data.products)) {
       allProducts = data.products;
-      categories = Array.isArray(data.categories) && data.categories.length ? data.categories : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
+
+      // raw categories: если Poster вернул категории — используем их, иначе строим из продуктов
+      const rawCategories = Array.isArray(data.categories) && data.categories.length
+        ? data.categories
+        : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
+
+      // ФИЛЬТР: убираем категории, в которых нет товаров с ценой > 0,
+      // но **оставляем** категорию "Комплектація" (независимо от содержимого).
+      categories = rawCategories.filter(cat=>{
+        try {
+          const norm = String(cat).trim().toLowerCase();
+          if(norm === 'комплектація') return true; // всегда держим
+          // в категории должен быть хотя бы 1 товар с ценой > 0
+          return allProducts.some(p => {
+            const pCat = (p.category || 'Інше');
+            return String(pCat) === String(cat) && Number(p.price) > 0;
+          });
+        } catch(e) { return false; }
+      });
+
+      // на всякий случай, если после фильтра ничего не осталось — восстановим хотя бы одну
+      if(!categories.length){
+        // если есть продукты с ценой >0 — используем их категории
+        const nonZeroCats = Array.from(new Set(allProducts.filter(p=>Number(p.price)>0).map(p=>p.category || 'Інше')));
+        categories = nonZeroCats.length ? nonZeroCats : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
+      }
+
     } else {
       allProducts = [];
       categories = [];
-      console.warn('menu: отримано порожні дані');
+      console.warn('menu: отримано порожнi дані');
     }
     renderCategories();
-    if(categories.length) showCategory(categories[0]);
-    else document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
+
+    // если текущая категория была удалена фильтром — переключимся на первую
+    if(categories.length){
+      if(!currentCategory || !categories.includes(currentCategory)){
+        showCategory(categories[0]);
+      } else {
+        showCategory(currentCategory);
+      }
+    } else {
+      document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
+    }
+
     setTimeout(updateCategoryArrows, 120);
   } catch(err){
     console.error('loadMenu error', err);
