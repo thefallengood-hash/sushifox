@@ -332,6 +332,63 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   #randomView { min-height:50vh; padding:16px; }
   #randomContainer .card { padding:0; }
 }
+
+/* ========== DESKTOP: CATEGORIES AS LEFT COLUMN, MOBILE: HORIZONTAL SCROLL ==========
+   >=981px: показываем категории вертикально слева; мобильные экраны остаются как есть. */
+@media (min-width: 981px) {
+  /* делаем menuView flex-контейнером, чтобы слева была колонка категорий, справа — контент */
+  #menuView {
+    display: block; /* оставляем блочным - мы используем отступы, а не full flex layout, чтобы не менять структуру сильно */
+  }
+
+  /* Перенастраиваем панель категорий: вертикально, слева */
+  #menuView .tabs-slider {
+    position: static;              /* отменяем sticky */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    width: 200px;                 /* ширина левой колонки с категориями */
+    padding: 8px;
+    margin: 0;
+  }
+
+  /* Трек категорий: колонки вниз, вертикальный скролл при необходимости */
+  #menuView .tabs-track{
+    display: flex;
+    flex-direction: column;       /* столбик */
+    gap: 10px;
+    overflow-x: visible;
+    overflow-y: auto;
+    max-height: calc(100vh - 160px); /* чтобы не вылезало за экран (учтём шапку и отступы) */
+    padding: 4px 0;
+    background: transparent;
+    border-radius: 10px;
+  }
+
+  /* Скрываем стрелки прокрутки на десктопе */
+  #menuView .tabs-arrow { display: none; }
+
+  /* Убираем nowrap — теперь табы займут ширину контейнера */
+  #menuView .tabs-track .tab {
+    white-space: normal;
+    flex: 0 0 auto;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+
+  /* Сдвигаем основной контент вправо, чтобы освободить место для левой колонки */
+  #menuView > .section {
+    margin-left: 220px; /* немного больше ширины колонки для отступа */
+  }
+
+  /* Также сдвигаем внутренние элементы (например slider-container), если они находятся внутри section */
+  #menuView .slider-container, #menuView #products {
+    margin-left: 0;
+  }
+}
 </style>
 </head>
 <body>
