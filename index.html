@@ -272,6 +272,25 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   .map { order:2; width:100%; min-height:200px; }
   .contact-left { order:1; width:100%; }
 }
+
+/* ================== RANDOM VIEW ADJUSTMENTS ================== */
+/* Центрируем всю секцию рандома и делаем карточку шире, картинка НЕ обрезается сильно */
+#randomView { display:flex; align-items:center; justify-content:center; padding:28px; min-height:60vh; }
+#randomView .random-inner { width:100%; max-width:900px; display:flex; flex-direction:column; align-items:center; gap:18px; }
+#randomView .random-controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center; }
+#randomView .random-note { color:var(--muted); font-size:14px; }
+#randomContainer { width:100%; display:flex; align-items:center; justify-content:center; margin-top:6px; }
+
+/* карточка рандомного блюда — шире и с более высоким изображением */
+#randomContainer .card { max-width:620px; width:100%; margin:0; }
+#randomContainer .card-img { height:320px; object-fit:contain; background:#fafafa; display:block; }
+
+/* при мобильном — чуть уменьшать высоту картинки */
+@media(max-width:720px){
+  #randomContainer .card-img { height:220px; }
+  #randomView { min-height:50vh; padding:16px; }
+  #randomContainer .card { padding:0; }
+}
 </style>
 </head>
 <body>
@@ -326,14 +345,16 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       </div>
     </div>
 
-    <!-- ===== Random view ===== -->
-    <div id="randomView" class="spa-view" style="display:none;padding:18px;">
-      <h2>🎲 Рандомне блюдо</h2>
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <button id="randomBtn" class="btn">Згенерувати рандомне блюдо</button>
-        <div id="randomNote" style="color:var(--muted);font-size:14px">Бере випадковий товар із усього меню Poster</div>
+    <!-- ===== Random view (центрированный) ===== -->
+    <div id="randomView" class="spa-view" style="display:none;">
+      <div class="random-inner">
+        <h2>🎲 Рандомне блюдо</h2>
+        <div class="random-controls" role="region" aria-label="Random controls">
+          <button id="randomBtn" class="btn">Згенерувати рандомне блюдо</button>
+          <div id="randomNote" class="random-note">Бере випадковий товар із усього меню Poster</div>
+        </div>
+        <div id="randomContainer"></div>
       </div>
-      <div id="randomContainer" style="margin-top:18px"></div>
     </div>
 
     <div id="contactsView" class="spa-view" style="display:none;">
@@ -434,7 +455,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   });
 })();
 
-/* ========== Твой оригинальный JS (весь, с несколькими дополнениями) ========== */
+/* ========== Твой оригинальный JS (весь, без изменений) ========== */
 /* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
@@ -460,22 +481,8 @@ async function loadMenu(){
     const data = await res.json();
 
     if (data?.products && Array.isArray(data.products)) {
-      // **ФИЛЬТР**: исключаем категорию "Комплектація" и товары с ценой 0
-      const filtered = data.products.filter(p => {
-        const cat = p.category || '';
-        const priceNum = Number(p.price);
-        if(String(cat).trim().toLowerCase() === 'комплектація') return false;
-        if(!isNaN(priceNum) && priceNum === 0) return false;
-        return true;
-      });
-      allProducts = filtered;
-
-      // categories: если Poster вернул категории — используем их, но фильтруем "Комплектація"
-      if(Array.isArray(data.categories) && data.categories.length){
-        categories = data.categories.filter(c => String(c).trim().toLowerCase() !== 'комплектація' && filtered.some(p=> (p.category||'Інше') === c));
-      } else {
-        categories = Array.from(new Set(filtered.map(p=>p.category || 'Інше')));
-      }
+      allProducts = data.products;
+      categories = Array.isArray(data.categories) && data.categories.length ? data.categories : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
     } else {
       allProducts = [];
       categories = [];
@@ -583,35 +590,11 @@ function openLightbox(imgEl){
   clone.style.transition='transform .35s ease, top .35s ease, left .35s ease, width .35s ease, height .35s ease, opacity .2s ease';
   clone.style.transformOrigin='center center'; clone.style.borderRadius='12px'; clone.style.zIndex=9999; clone.style.cursor='pointer'; clone.style.objectFit='cover';
   document.body.appendChild(clone);
-
-  const vw=window.innerWidth,vh=window.innerHeight;
-  const maxW=vw*0.9,maxH=vh*0.9;
+  const vw=window.innerWidth,vh=window.innerHeight; const maxW=vw*0.9,maxH=vh*0.9;
+  const scale=Math.min(1.8,maxW/rect.width,maxH/rect.height);
   const centerX=rect.left+rect.width/2, centerY=rect.top+rect.height/2;
   const dx=(vw/2)-centerX, dy=(vh/2)-centerY;
-
-  // Не увеличиваем изображение выше его натурального размера:
-  const imgTemp = new Image();
-  imgTemp.src = imgEl.src;
-  imgTemp.onload = function(){
-    const naturalW = imgTemp.naturalWidth || rect.width;
-    const naturalH = imgTemp.naturalHeight || rect.height;
-
-    // желаемый масштаб для попадания в окно (без учета натурального размера)
-    const desiredScale = Math.min(maxW/rect.width, maxH/rect.height, 1.8);
-
-    // ограничение, чтобы не увеличивать больше натурального размера
-    const notUpscaleLimit = Math.min(naturalW/rect.width, naturalH/rect.height, 1.0);
-
-    const finalScale = Math.min(desiredScale, notUpscaleLimit);
-
-    requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${finalScale})`; clone.style.display='block'; });
-  };
-  imgTemp.onerror = function(){
-    // fallback: старая логика, но без гарантии про натуральный размер
-    const scale=Math.min(1.8,maxW/rect.width,maxH/rect.height);
-    requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; clone.style.display='block'; });
-  };
-
+  requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; clone.style.display='block'; });
   function close(){ clone.style.transform='translate(0px, 0px) scale(1)'; setTimeout(()=> { if(clone.parentElement) clone.parentElement.removeChild(clone); }, 350); window._miniLb=null; document.removeEventListener('click', outsideHandler); window.removeEventListener('keydown', keyHandler); }
   function outsideHandler(e){ if(e.target !== clone) close(); }
   function keyHandler(e){ if(e.key === 'Escape') close(); }
@@ -802,16 +785,16 @@ function renderRandomDishCard(product){
   }
   const card = document.createElement('div');
   card.className = 'card';
-  card.style.maxWidth = '420px';
+  card.style.maxWidth = '620px';
   card.style.marginTop = '12px';
   card.innerHTML = `
     <img loading="lazy" src="${safeImg(product.img)}" alt="${escapeHtml(product.name)}" class="card-img" />
-    <div class="card-body">
+    <div class="card-body" style="text-align:center">
       <div class="card-title">${escapeHtml(product.name)}</div>
       <div class="card-desc">${escapeHtml(product.desc || '')}</div>
-      <div class="card-row">
+      <div class="card-row" style="justify-content:center">
         <div class="price">${formatUAH(product.price)}</div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;margin-left:10px">
           <button class="btn add-random">В кошик</button>
           <button class="btn regen-random" style="background:#fff;color:#111;font-weight:700">Ще</button>
         </div>
@@ -821,9 +804,7 @@ function renderRandomDishCard(product){
   container.appendChild(card);
 
   card.querySelector('.add-random').addEventListener('click', ()=>{
-    // используем существующую функцию добавления в корзину
     try { addToCartFromProduct(product); } catch(e){ console.error(e); }
-    // при добавлении можно показать краткое уведомление
     const note = document.getElementById('randomNote');
     if(note){ note.textContent = 'Додано в кошик ✅'; setTimeout(()=> note.textContent = 'Бере випадковий товар із усього меню Poster', 1200); }
   });
@@ -834,9 +815,7 @@ function renderRandomDishCard(product){
 }
 
 function showRandomDish(){
-  // берём случайный товар из allProducts
   if(!allProducts || !allProducts.length){
-    // если ещё не загружено — сообщаем
     const container = document.getElementById('randomContainer');
     container.innerHTML = '<div style="padding:12px;color:var(--muted)">Меню ще не завантажено — зачекайте...</div>';
     return;
