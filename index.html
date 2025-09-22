@@ -333,61 +333,84 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   #randomContainer .card { padding:0; }
 }
 
-/* ========== DESKTOP: CATEGORIES AS LEFT COLUMN, MOBILE: HORIZONTAL SCROLL ==========
-   >=981px: показываем категории вертикально слева; мобильные экраны остаются как есть. */
-@media (min-width: 981px) {
-  /* делаем menuView flex-контейнером, чтобы слева была колонка категорий, справа — контент */
+/* ================== ADDED: vertical categories layout for desktop ================== */
+/* On wide screens put categories in a left column and slider+products in the right column */
+@media(min-width:721px){
+  /* make menuView a two-column grid: left - categories, right - content */
   #menuView {
-    display: block; /* оставляем блочным - мы используем отступы, а не full flex layout, чтобы не менять структуру сильно */
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "nav content"
+      "nav content";
+    gap: 16px;
+    align-items: start;
   }
 
-  /* Перенастраиваем панель категорий: вертикально, слева */
+  /* place the existing .tabs-slider into the left 'nav' area and make it vertical */
   #menuView .tabs-slider {
-    position: static;              /* отменяем sticky */
+    grid-area: nav;
+    position: static; /* override sticky top behavior to keep inside left column */
+    align-self: start;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: 12px;
-    width: 200px;                 /* ширина левой колонки с категориями */
     padding: 8px;
-    margin: 0;
+    background: transparent;
+    max-height: calc(100vh - 120px);
+    overflow: auto;
   }
 
-  /* Трек категорий: колонки вниз, вертикальный скролл при необходимости */
+  /* make the track vertical */
   #menuView .tabs-track{
     display: flex;
-    flex-direction: column;       /* столбик */
-    gap: 10px;
-    overflow-x: visible;
-    overflow-y: auto;
-    max-height: calc(100vh - 160px); /* чтобы не вылезало за экран (учтём шапку и отступы) */
+    flex-direction: column;
+    gap: 8px;
     padding: 4px 0;
+    overflow: auto;
     background: transparent;
-    border-radius: 10px;
   }
-
-  /* Скрываем стрелки прокрутки на десктопе */
-  #menuView .tabs-arrow { display: none; }
-
-  /* Убираем nowrap — теперь табы займут ширину контейнера */
-  #menuView .tabs-track .tab {
+  /* tabs become regular pills but not full-round like horizontal */
+  #menuView .tabs-track .tab{
     white-space: normal;
-    flex: 0 0 auto;
-    width: 100%;
     text-align: left;
+    border-radius: 12px;
     padding: 10px 12px;
-    border-radius: 10px;
+    flex: 0 0 auto;
   }
 
-  /* Сдвигаем основной контент вправо, чтобы освободить место для левой колонки */
-  #menuView > .section {
-    margin-left: 220px; /* немного больше ширины колонки для отступа */
+  /* hide left/right arrows on desktop (not needed) */
+  #menuView .tabs-arrow{ display: none; }
+
+  /* Place the first .section (slider) and second .section (products) into the content area */
+  #menuView > .section:nth-of-type(1),
+  #menuView > .section:nth-of-type(2) {
+    grid-area: content;
   }
 
-  /* Также сдвигаем внутренние элементы (например slider-container), если они находятся внутри section */
-  #menuView .slider-container, #menuView #products {
-    margin-left: 0;
-  }
+  /* make slider centered in content column */
+  #menuView .slider-container { margin-left: auto; margin-right: auto; }
+
+  /* slightly reduce gap between slider and products on wide screens */
+  #menuView .section + .section { margin-top: 8px; }
+
+  /* ensure products column takes full width available */
+  #menuView .products { margin-top: 12px; }
+
+  /* keep thumb row centered */
+  #menuView .thumbs-row { justify-content: center; }
+
+  /* don't let the left column push page too wide on very large screens */
+  .container { max-width: 1200px; }
+}
+
+/* On small screens keep original horizontal behavior (no change). */
+@media(max-width:720px){
+  #menuView { display: block; }
+  #menuView .tabs-slider { position: sticky; top:0; display:flex; flex-direction:row; align-items:center; }
+  #menuView .tabs-track { flex-direction: row; overflow-x:auto; }
+  #menuView .tabs-arrow{ display: block; }
 }
 </style>
 </head>
@@ -900,7 +923,7 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   }
 });
 
-/* ========== ІНІЦІАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
+/* ========== ІНІЦИАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
 
 /* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
