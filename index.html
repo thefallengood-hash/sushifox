@@ -333,84 +333,73 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   #randomContainer .card { padding:0; }
 }
 
-/* ================== ADDED: vertical categories layout for desktop ================== */
-/* On wide screens put categories in a left column and slider+products in the right column */
-@media(min-width:721px){
-  /* make menuView a two-column grid: left - categories, right - content */
+/* ================== NEW: Vertical categories layout on desktop ================== */
+/* Keep mobile unchanged, only switch layout on wider screens */
+@media (min-width: 900px) {
+  /* make menu view a two-column grid: left = categories, right = content */
   #menuView {
     display: grid;
-    grid-template-columns: 220px 1fr;
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-      "nav content"
-      "nav content";
-    gap: 16px;
+    grid-template-columns: 260px 1fr;
+    grid-auto-rows: auto;
+    gap: 20px;
     align-items: start;
   }
 
-  /* place the existing .tabs-slider into the left 'nav' area and make it vertical */
-  #menuView .tabs-slider {
-    grid-area: nav;
-    position: static; /* override sticky top behavior to keep inside left column */
+  /* tabs-slider (categories) goes to left column and spans both rows */
+  #menuView > .tabs-slider {
+    grid-column: 1 / 2;
+    grid-row: 1 / 3;
+    position: static; /* cancel sticky side-effects on layout */
     align-self: start;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 8px;
-    background: transparent;
-    max-height: calc(100vh - 120px);
-    overflow: auto;
+    padding: 12px;
   }
 
-  /* make the track vertical */
-  #menuView .tabs-track{
+  /* slider section (the first .section inside menuView) -> top of right column */
+  #menuView > .section:nth-child(2) {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+  }
+
+  /* products section -> below slider in right column */
+  #menuView > .section:nth-child(3) {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+  }
+
+  /* make tabs-track vertical and scrollable */
+  #menuView .tabs-track {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 4px 0;
-    overflow: auto;
-    background: transparent;
+    gap: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px;
+    /* limit height so it won't overflow too far (adjust if needed) */
+    max-height: calc(100vh - 160px);
   }
-  /* tabs become regular pills but not full-round like horizontal */
+
+  /* tabs become full-width pills aligned left */
   #menuView .tabs-track .tab{
     white-space: normal;
+    flex: 0 0 auto;
+    width: 100%;
     text-align: left;
     border-radius: 12px;
     padding: 10px 12px;
-    flex: 0 0 auto;
   }
 
-  /* hide left/right arrows on desktop (not needed) */
-  #menuView .tabs-arrow{ display: none; }
-
-  /* Place the first .section (slider) and second .section (products) into the content area */
-  #menuView > .section:nth-of-type(1),
-  #menuView > .section:nth-of-type(2) {
-    grid-area: content;
+  /* hide horizontal arrows on desktop (they're for mobile scrolling) */
+  #menuView .tabs-arrow{
+    display: none;
   }
 
-  /* make slider centered in content column */
-  #menuView .slider-container { margin-left: auto; margin-right: auto; }
-
-  /* slightly reduce gap between slider and products on wide screens */
-  #menuView .section + .section { margin-top: 8px; }
-
-  /* ensure products column takes full width available */
-  #menuView .products { margin-top: 12px; }
-
-  /* keep thumb row centered */
-  #menuView .thumbs-row { justify-content: center; }
-
-  /* don't let the left column push page too wide on very large screens */
-  .container { max-width: 1200px; }
-}
-
-/* On small screens keep original horizontal behavior (no change). */
-@media(max-width:720px){
-  #menuView { display: block; }
-  #menuView .tabs-slider { position: sticky; top:0; display:flex; flex-direction:row; align-items:center; }
-  #menuView .tabs-track { flex-direction: row; overflow-x:auto; }
-  #menuView .tabs-arrow{ display: block; }
+  /* center slider and allow it to be wider on desktop */
+  #menuView .slider-container{
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 720px;
+    width: 100%;
+  }
 }
 </style>
 </head>
