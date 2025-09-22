@@ -565,7 +565,7 @@ function getBadgesHtml(p){
     const popularNormalized = popularIds.map(String);
     const newNormalized = newIds.map(String);
     if(popularNormalized.includes(id)) badges.push('<span class="badge badge-popular" aria-hidden="true">🔥 Популярне</span>');
-    if(newNormalized.includes(id)) badges.push('<span class="badge badge-new" aria-hidden="true">⭐ Сынша лавы вес 3242 шала шовка</span>');
+    if(newNormalized.includes(id)) badges.push('<span class="badge badge-new" aria-hidden="true">⭐ Новинка</span>');
     return badges.join(' ');
   } catch(e){
     return '';
