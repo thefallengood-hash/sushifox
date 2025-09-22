@@ -25,6 +25,16 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .tab.active{background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff}
 .section{background:transparent;border-radius:var(--radius)}
 
+/* Slider for product images */
+.slider-container{max-width:420px;margin:0 auto;border-radius:var(--radius);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.slide{display:none}
+.slide.active{display:block}
+.slide img{width:100%;height:260px;object-fit:cover;display:block}
+.thumbs-row{display:flex;align-items:center;gap:8px;margin-top:8px;justify-content:center;padding:8px}
+#thumbs{display:flex;gap:6px;overflow:hidden}
+#thumbs img{height:60px;width:100px;object-fit:cover;border-radius:10px;opacity:.65;cursor:pointer;transition:all .18s}
+#thumbs img.active{opacity:1;box-shadow:0 0 0 3px rgba(255,153,0,.12);transform:translateY(-2px)}
+
 /* Products grid */
 .products{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px}
 @media(max-width:980px){.products{grid-template-columns:repeat(3,1fr)}}
@@ -44,10 +54,15 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .card:hover{transform:translateY(-6px)}
 .card-img{width:100%;height:160px;object-fit:cover;cursor:pointer}
 .card-body{padding:12px;display:flex;flex-direction:column;gap:8px}
-.card-title{font-weight:700;color:#0b1220}
+.card-title{font-weight:700;color:#0b1220;display:flex;align-items:center;gap:8px}
 .card-desc{font-size:13px;color:var(--accent);min-height:36px}
 .card-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .price{font-weight:700;color:var(--accent)}
+
+/* Badge styles */
+.badge { display:inline-block; padding:4px 8px; font-size:12px; border-radius:999px; font-weight:700; line-height:1; }
+.badge-popular { background:#ff4d4f; color:#fff; }
+.badge-new { background:#ffb347; color:#111; border:1px solid rgba(0,0,0,0.04); }
 
 /* Buttons */
 .btn{background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
@@ -149,7 +164,7 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .sheet .total, .sheet .total span, #cartTotal { color:#000 !important; font-weight:800; }
 #cartList .cart-name, #cartList .cart-qty, #cartList .cart-total, .cart-total, .cart-name { color:#000 !important; }
 
-/* Visual upgrade: cards, etc (kept) */
+/* Visual upgrade: cards, slider, etc (kept) */
 .tab { font-size: 14px; transition: transform .18s, box-shadow .18s; }
 .tab:hover { transform: translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.12); }
 .card { transition: transform .25s ease, box-shadow .25s ease; }
@@ -157,14 +172,27 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .card-title { font-size: 16px; line-height:1.3; }
 .card-desc { font-size:13px; line-height:1.4; }
 .add-btn { font-size:13px; padding:6px 10px; }
+.slider-container { border-radius:18px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.15); }
+.slide img { transition: transform .35s ease; }
+.slide.active img { transform: scale(1.02); }
+#thumbs img { border:2px solid transparent; }
+#thumbs img.active { border-color: var(--accent); transform: translateY(-4px); }
+
+/* Skeleton / fly-to-cart (kept) */
+.card.skeleton { background:#eee; color:transparent; pointer-events:none; min-height:220px; }
+.card.skeleton .card-img { background:#ddd; height:160px; }
+.fly-to-cart { position:fixed; z-index:9999; transition: transform 0.6s cubic-bezier(0.5,-0.5,0.5,1.5), opacity .4s; pointer-events:none; border-radius:12px; width:80px; height:80px; object-fit:cover; }
 
 /* ----------------------------
-  CATEGORY SLIDER (inside menu) — STICKY behavior (kept for tabs)
+  CATEGORY SLIDER (inside menu) — STICKY behavior
 -----------------------------*/
+
+/* tabs-slider: STICKY — when it reaches top it stays visible at top;
+   when you scroll back up above its original spot it returns to place */
 .tabs-slider{
   position: sticky;
-  top: 0;
-  z-index: 999;
+  top: 0; /* прилипает к самому верху окна */
+  z-index: 999; /* чтобы точно поверх контента */
   display:flex;
   align-items:center;
   gap:8px;
@@ -173,6 +201,8 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   background: transparent;
   border-radius: var(--radius);
 }
+
+/* track */
 .tabs-track{
   display:flex;
   gap:10px;
@@ -184,13 +214,19 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   padding:2px 8px;
 }
 .tabs-track::-webkit-scrollbar{ display:none; }
+
+/* arrows */
 .tabs-arrow{ background:#fff; border:none; border-radius:999px; width:36px; height:36px; display:grid; place-items:center; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.08); font-size:18px; }
 .tabs-arrow:active{ transform:scale(.98); }
+
+/* inside menu view we give the track a bg to match page bg and rounded pill */
 #menuView .tabs-track{
   background: var(--bg);
   border-radius: 12px;
   padding: 8px;
 }
+
+/* make tabs not wrap inside track */
 .tabs-track .tab{ white-space:nowrap; flex:0 0 auto; }
 
 /* ================== КОНТАКТИ (НОВЫЙ СТИЛЬ) ================== */
@@ -304,14 +340,18 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 }
 
 /* ================== RANDOM VIEW ADJUSTMENTS ================== */
+/* Центрируем всю секцию рандома и делаем карточку шире, картинка НЕ обрезается сильно */
 #randomView { display:flex; align-items:center; justify-content:center; padding:28px; min-height:60vh; }
 #randomView .random-inner { width:100%; max-width:900px; display:flex; flex-direction:column; align-items:center; gap:18px; }
 #randomView .random-controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center; }
 #randomView .random-note { color:var(--muted); font-size:14px; }
 #randomContainer { width:100%; display:flex; align-items:center; justify-content:center; margin-top:6px; }
+
+/* карточка рандомного блюда — шире и с более высоким изображением */
 #randomContainer .card { max-width:620px; width:100%; margin:0; }
 #randomContainer .card-img { height:320px; object-fit:contain; background:#fafafa; display:block; }
 
+/* при мобильном — чуть уменьшать высоту картинки */
 @media(max-width:720px){
   #randomContainer .card-img { height:220px; }
   #randomView { min-height:50vh; padding:16px; }
@@ -356,6 +396,17 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       </div>
 
       <div class="section">
+        <div class="slider-container" id="sliderBlock">
+          <div id="slider"></div>
+          <div class="thumbs-row">
+            <button id="thumbPrev" class="btn" style="padding:6px 10px;margin-right:6px">◀</button>
+            <div id="thumbs"></div>
+            <button id="thumbNext" class="btn" style="padding:6px 10px;margin-left:6px">▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
         <div id="products" class="products" aria-live="polite"></div>
       </div>
     </div>
@@ -386,8 +437,9 @@ h1{margin:0;font-size:22px;color:var(--accent)}
             <div class="contact-row">✉️ Email: <a class="link" href="mailto:contact@sushi-fox.ua">contact@sushi-fox.ua</a></div>
           </div>
 
-          <!-- Netlify form: оставлена -->
+          <!-- Netlify form: заменил старую локальную форму на эту -->
           <form id="feedbackForm" class="contact-form" name="feedback" method="POST" data-netlify="true" netlify-honeypot="bot-field" aria-label="Форма зворотного зв'язку">
+            <!-- скрытое поле для Netlify -->
             <input type="hidden" name="form-name" value="feedback" />
             <p style="display:none">
               <label>Don’t fill this out: <input name="bot-field" /></label>
@@ -472,18 +524,26 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       tab.classList.add('active');
       const view = tab.getAttribute('data-view');
       Object.keys(views).forEach(v => { views[v].style.display = (v===view ? 'block' : 'none'); });
+      // если показали меню — захотим перерендерить/инициализировать слайдер (если уже загружено)
       if(view === 'menu') {
+        try { if(typeof renderSlider === 'function' && window.lastRenderedProducts) renderSlider(window.lastRenderedProducts); } catch(e){ /* пусто */ }
         setTimeout(updateCategoryArrows, 120);
       }
+      // если открыли рандом — ничего особого не нужно (данные подгружаются глобально)
     });
   });
 })();
 
+/* ========== ТОТ ЖЕ JS (с фильтром категорий) ========== */
 /* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
 const LIQPAY_API = '/.netlify/functions/liqpay';
 const IMG_FALLBACK = '/images/noimage.png';
+
+/* ========== BADGE CONFIG ========== */
+const popularIds = ['87','88']; // популярные товары
+const newIds = ['86','88','85','87'];     // новинки
 
 /* ========== СТЕЙТ ========== */
 let allProducts = [];
@@ -495,6 +555,22 @@ let cart = JSON.parse(localStorage.getItem('sushi_cart') || '[]');
 function formatUAH(n){ return Math.round(n) + '₴'; }
 function safeImg(url){ return url ? url : IMG_FALLBACK; }
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+/* helper для генерации бейджей — использует нормализацию id */
+function getBadgesHtml(p){
+  try {
+    const id = String(p.id || p.product_id || p.name || '');
+    const badges = [];
+    // сравниваем со строками (в popularIds/newIds могут быть числа или строки)
+    const popularNormalized = popularIds.map(String);
+    const newNormalized = newIds.map(String);
+    if(popularNormalized.includes(id)) badges.push('<span class="badge badge-popular" aria-hidden="true">🔥 Популярне</span>');
+    if(newNormalized.includes(id)) badges.push('<span class="badge badge-new" aria-hidden="true">⭐ Новинка</span>');
+    return badges.join(' ');
+  } catch(e){
+    return '';
+  }
+}
 
 /* ========== ЗАВАНТАЖЕННЯ МЕНЮ ========== */
 async function loadMenu(){
@@ -568,6 +644,8 @@ function showCategory(cat){
   document.querySelectorAll('#tabs .tab').forEach(t=> t.classList.toggle('active', t.textContent===cat));
   const prods = allProducts.filter(p => (p.category || 'Інше') === cat);
   renderProducts(prods);
+  renderSlider && renderSlider(prods);
+  window.lastRenderedProducts = prods;
 }
 
 /* ========== РЕНДЕР ПРОДУКТІВ ========== */
@@ -576,10 +654,14 @@ function renderProducts(products){
   if(!products.length){ wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; return; }
   products.forEach(p=>{
     const card = document.createElement('div'); card.className = 'card';
+    const badgesHtml = getBadgesHtml(p);
     card.innerHTML = `
       <img loading="lazy" src="${safeImg(p.img)}" alt="${escapeHtml(p.name)}" class="card-img product-img" />
       <div class="card-body">
-        <div class="card-title">${escapeHtml(p.name)}</div>
+        <div class="card-title">
+          <span style="flex:1">${escapeHtml(p.name)}</span>
+          <span aria-hidden="true">${badgesHtml}</span>
+        </div>
         <div class="card-desc">${escapeHtml(p.desc || '')}</div>
         <div class="card-row">
           <div class="price">${formatUAH(p.price)}</div>
@@ -592,9 +674,41 @@ function renderProducts(products){
   initProductLightbox();
 }
 
+/* ========== СЛАЙДЕР ========== */
+let sliderInterval = null;
+function renderSlider(products){
+  const slider = document.getElementById('slider');
+  const thumbs = document.getElementById('thumbs');
+  if(slider) slider.innerHTML = '';
+  if(thumbs) thumbs.innerHTML = '';
+  if(!products || !products.length) return;
+  products.forEach((p,i)=>{
+    const s = document.createElement('div'); s.className = 'slide' + (i===0 ? ' active' : '');
+    s.innerHTML = `<img src="${safeImg(p.img)}" alt="${escapeHtml(p.name)}" />`;
+    slider.appendChild(s);
+    const t = document.createElement('img'); t.src = safeImg(p.img);
+    if(i===0) t.classList.add('active');
+    t.addEventListener('click', ()=> showSlide(i));
+    thumbs.appendChild(t);
+  });
+  let idx = 0; if(sliderInterval) clearInterval(sliderInterval);
+  sliderInterval = setInterval(()=>{ idx = (idx + 1) % products.length; showSlide(idx); }, 4000);
+}
+function showSlide(n){
+  const slides = document.querySelectorAll('#slider .slide');
+  const tbs = document.querySelectorAll('#thumbs img');
+  if(!slides.length) return;
+  slides.forEach(s=>s.classList.remove('active'));
+  tbs.forEach(t=>t.classList.remove('active'));
+  if(slides[n]) slides[n].classList.add('active');
+  if(tbs[n]) tbs[n].classList.add('active');
+}
+document.getElementById('thumbPrev')?.addEventListener('click', ()=> { document.getElementById('thumbs')?.scrollBy({left:-120,behavior:'smooth'}); });
+document.getElementById('thumbNext')?.addEventListener('click', ()=> { document.getElementById('thumbs')?.scrollBy({left:120,behavior:'smooth'}); });
+
 /* ========== МІНІ-ЛАЙТБОКС ========== */
 function initProductLightbox(){
-  document.querySelectorAll('.product-img').forEach(img=>{
+  document.querySelectorAll('.product-img, #slider img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
   });
 }
@@ -726,6 +840,7 @@ cartOverlay?.addEventListener('click', closeCartPanel);
 document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPanel(); });
 
 /* ========== ПЕРЕТАСКИВАЕМАЯ КНОПКА КОРЗИНЫ (DRAGGABLE FAB) ========== */
+/* не использует localStorage, короткая, надёжная реализация на Pointer Events */
 (function makeFabDraggable(){
   const fab = document.getElementById('openCart');
   if(!fab) return;
@@ -735,7 +850,9 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
   let origLeft = 0, origTop = 0;
   let moved = false;
 
+  // pointerdown — начало перетаскивания
   fab.addEventListener('pointerdown', function (e) {
+    // только левой кнопкой/касанием
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
     fab.setPointerCapture && fab.setPointerCapture(e.pointerId);
@@ -746,13 +863,17 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
     const rect = fab.getBoundingClientRect();
     origLeft = rect.left;
     origTop = rect.top;
+    // убираем переходы чтобы позиция двигалась чётко
     fab.style.transition = 'none';
+    // установим explicit left/top, чтобы перейти от right/bottom
     if (!fab.style.left) fab.style.left = rect.left + 'px';
     if (!fab.style.top) fab.style.top = rect.top + 'px';
+    // выключим right/bottom чтобы не конфликтовало
     fab.style.right = 'auto';
     fab.style.bottom = 'auto';
   });
 
+  // pointermove — двигаем
   document.addEventListener('pointermove', function (e) {
     if (!dragging) return;
     e.preventDefault();
@@ -764,6 +885,7 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
     const h = fab.offsetHeight;
     let left = origLeft + dx;
     let top = origTop + dy;
+    // ограничим в пределах окна с отступом 8px
     left = Math.max(8, Math.min(left, vw - w - 8));
     top = Math.max(8, Math.min(top, vh - h - 8));
     fab.style.left = left + 'px';
@@ -771,20 +893,26 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
     moved = moved || (Math.hypot(dx, dy) > 3);
   });
 
+  // завершение перетаскивания
   function endDrag(e) {
     if (!dragging) return;
     dragging = false;
     try { fab.releasePointerCapture && fab.releasePointerCapture(e && e.pointerId); } catch(err){}
+    // вернуть минимальную транзицию
     fab.style.transition = 'box-shadow .2s';
+    // если действительно перетаскивали — предотвратить последующий click
     if (moved) {
       const blocker = function (ev) { ev.stopImmediatePropagation(); ev.preventDefault(); };
+      // добавляем слушатель в capture, чтобы остановить click
       fab.addEventListener('click', blocker, true);
+      // удалим его через небольшой таймаут (после срабатывания click)
       setTimeout(()=> fab.removeEventListener('click', blocker, true), 300);
     }
   }
   document.addEventListener('pointerup', endDrag);
   document.addEventListener('pointercancel', endDrag);
 
+  // ресайз — если окно изменилась, скорректируем позицию чтобы элемент не оказался вне экрана
   window.addEventListener('resize', function(){
     const vw = window.innerWidth, vh = window.innerHeight;
     const w = fab.offsetWidth, h = fab.offsetHeight;
@@ -798,6 +926,7 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
 })();
 
 /* ========== ОФОРМЛЕНИЕ ЗАМОВЛЕННЯ ========== */
+/* оставил обработчик checkoutOrder — он использует текущую переменную cart и обновляет UI */
 document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   if(cart.length === 0){ alert('Кошик порожній'); return; }
   const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
@@ -806,6 +935,7 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   const note = document.getElementById('custNote') ? document.getElementById('custNote').value.trim() : '';
   const payment = document.querySelector('input[name="payment"]:checked')?.value || 'online';
   if(!name || !phone){
+    // если форма не присутствует в UI (мы оформляем прямо из панели) — попросим ввести минимум
     if(!document.getElementById('custName')){
       const n = prompt('Вкажіть ваше ім\'я');
       const ph = prompt('Вкажіть телефон');
@@ -856,7 +986,9 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   }
 });
 
-/* ========== ІНІЦИАЛИЗАЦІЯ ========== */
+/* ========== ІНІЦИАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
+
+/* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
 const catNext = document.getElementById('catNext');
 const tabsTrack = document.getElementById('tabs');
@@ -955,11 +1087,12 @@ function showRandomDish(){
   renderRandomDishCard(product);
 }
 
+// привязка кнопки
 document.getElementById('randomBtn')?.addEventListener('click', ()=>{
   showRandomDish();
 });
 
-/* старт */
+/* ========== ИНИЦИАЛИЗАЦИЯ ========== */
 updateCategoryArrows();
 updateCartUI();
 loadMenu();
