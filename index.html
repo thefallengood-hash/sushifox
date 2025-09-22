@@ -64,7 +64,27 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .btn:active{transform:translateY(1px)}
 
 /* Cart FAB (плавающая кнопка) */
-.cart-fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:18px;background:linear-gradient(120deg,var(--accent),#ffb347);display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px;cursor:pointer;box-shadow:var(--shadow);z-index:1101}
+/* — добавлены cursor, user-select и touch-action для перетаскивания */
+.cart-fab{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  width:64px;
+  height:64px;
+  border-radius:18px;
+  background:linear-gradient(120deg,var(--accent),#ffb347);
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font-weight:800;
+  font-size:22px;
+  cursor:grab;
+  user-select:none;
+  touch-action:none; /* важно для pointer events */
+  box-shadow:var(--shadow);
+  z-index:1101;
+}
+.cart-fab:active{ cursor:grabbing; }
 .cart-count{position:absolute;top:-6px;right:-6px;background:#071023;color:#fff;border-radius:999px;padding:3px 7px;font-size:12px}
 
 /* ========== SLIDE-IN CART PANEL ========== */
@@ -790,6 +810,92 @@ cartPanelClose?.addEventListener('click', closeCartPanel);
 cartOverlay?.addEventListener('click', closeCartPanel);
 document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPanel(); });
 
+/* ========== ПЕРЕТАСКИВАЕМАЯ КНОПКА КОРЗИНЫ (DRAGGABLE FAB) ========== */
+/* не использует localStorage, короткая, надёжная реализация на Pointer Events */
+(function makeFabDraggable(){
+  const fab = document.getElementById('openCart');
+  if(!fab) return;
+
+  let dragging = false;
+  let startX = 0, startY = 0;
+  let origLeft = 0, origTop = 0;
+  let moved = false;
+
+  // pointerdown — начало перетаскивания
+  fab.addEventListener('pointerdown', function (e) {
+    // только левой кнопкой/касанием
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    fab.setPointerCapture && fab.setPointerCapture(e.pointerId);
+    dragging = true;
+    moved = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    const rect = fab.getBoundingClientRect();
+    origLeft = rect.left;
+    origTop = rect.top;
+    // убираем переходы чтобы позиция двигалась чётко
+    fab.style.transition = 'none';
+    // установим explicit left/top, чтобы перейти от right/bottom
+    if (!fab.style.left) fab.style.left = rect.left + 'px';
+    if (!fab.style.top) fab.style.top = rect.top + 'px';
+    // выключим right/bottom чтобы не конфликтовало
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+  });
+
+  // pointermove — двигаем
+  document.addEventListener('pointermove', function (e) {
+    if (!dragging) return;
+    e.preventDefault();
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const w = fab.offsetWidth;
+    const h = fab.offsetHeight;
+    let left = origLeft + dx;
+    let top = origTop + dy;
+    // ограничим в пределах окна с отступом 8px
+    left = Math.max(8, Math.min(left, vw - w - 8));
+    top = Math.max(8, Math.min(top, vh - h - 8));
+    fab.style.left = left + 'px';
+    fab.style.top = top + 'px';
+    moved = moved || (Math.hypot(dx, dy) > 3);
+  });
+
+  // завершение перетаскивания
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    try { fab.releasePointerCapture && fab.releasePointerCapture(e && e.pointerId); } catch(err){}
+    // вернуть минимальную транзицию
+    fab.style.transition = 'box-shadow .2s';
+    // если действительно перетаскивали — предотвратить последующий click
+    if (moved) {
+      const blocker = function (ev) { ev.stopImmediatePropagation(); ev.preventDefault(); };
+      // добавляем слушатель в capture, чтобы остановить click
+      fab.addEventListener('click', blocker, true);
+      // удалим его через небольшой таймаут (после срабатывания click)
+      setTimeout(()=> fab.removeEventListener('click', blocker, true), 300);
+    }
+  }
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+
+  // ресайз — если окно изменилась, скорректируем позицию чтобы элемент не оказался вне экрана
+  window.addEventListener('resize', function(){
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const w = fab.offsetWidth, h = fab.offsetHeight;
+    const rect = fab.getBoundingClientRect();
+    let left = rect.left, top = rect.top;
+    left = Math.max(8, Math.min(left, vw - w - 8));
+    top = Math.max(8, Math.min(top, vh - h - 8));
+    fab.style.left = left + 'px';
+    fab.style.top = top + 'px';
+  });
+})();
+
 /* ========== ОФОРМЛЕНИЕ ЗАМОВЛЕННЯ ========== */
 /* оставил обработчик checkoutOrder — он использует текущую переменную cart и обновляет UI */
 document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
@@ -851,7 +957,7 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   }
 });
 
-/* ========== ІНІЦІАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
+/* ========== ІНІЦИАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
 
 /* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
