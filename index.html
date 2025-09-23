@@ -887,11 +887,14 @@ function applySearchFilter(){
 
 document.getElementById('menuSearch')?.addEventListener('input', applySearchFilter);
 
+/* ============ CHANGED: initProductLightbox only binds slider images (does NOT bind .product-img) ============ */
 function initProductLightbox(){
-  document.querySelectorAll('.product-img, #mainSlide, #thumbs img').forEach(img=>{
+  document.querySelectorAll('#mainSlide, #thumbs img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
   });
 }
+/* =============================================================================================================== */
+
 function openLightbox(imgEl){
   if(window._miniLb){ window._miniLb.close(); }
   const rect = imgEl.getBoundingClientRect();
