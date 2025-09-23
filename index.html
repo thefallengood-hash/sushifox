@@ -687,31 +687,40 @@ async function loadMenu(){
 
 /* ========== КАТЕГОРІЇ ========== */
 function renderCategories(){
-  const tabs = document.getElementById('tabs'); if(!tabs) return; tabs.innerHTML='';
-  categories.forEach(cat=>{
-    const el = document.createElement('div'); el.className='tab'; el.textContent = cat;
-    el.onclick = ()=> showCategory(cat);
-    tabs.appendChild(el);
-  });
+  const tabs = document.getElementById('tabs'); 
+  if(!tabs) return; 
+  tabs.innerHTML='';
+
+  categories
+    .filter(cat => cat !== "Що треба рекомендувати та знижки!") // 🔥 убираем лишнюю категорию
+    .forEach(cat=>{
+      const el = document.createElement('div'); 
+      el.className='tab'; 
+      el.textContent = cat;
+      el.onclick = ()=> showCategory(cat);
+      tabs.appendChild(el);
+    });
+
   updateCategoryArrows();
 }
 
 /* ========== ПОКАЗ КАТЕГОРІЇ ========== */
 function showCategory(cat){
   currentCategory = cat;
-  document.querySelectorAll('#tabs .tab').forEach(t=> t.classList.toggle('active', t.textContent===cat));
+  document.querySelectorAll('#tabs .tab').forEach(t=> 
+    t.classList.toggle('active', t.textContent===cat)
+  );
+
   let prods = allProducts.filter(p => (p.category || 'Інше') === cat);
 
-  // --- НОВОЕ: применяем пользовательский порядок (если задан для категории) ---
   prods = applyCategoryOrder(prods, cat);
-  // -----------------------------------------------------------------------
 
   renderProducts(prods);
   renderSlider && renderSlider(prods);
   window.lastRenderedProducts = prods;
 }
 
-/* ========== РЕНДЕР ПРОДУКТІВ ========== */
+
 function renderProducts(products){
   const wrap = document.getElementById('products'); if(!wrap) return; wrap.innerHTML = '';
   if(!products.length){ wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; return; }
@@ -737,7 +746,6 @@ function renderProducts(products){
   initProductLightbox();
 }
 
-/* ========== СЛАЙДЕР ========== */
 let sliderInterval = null;
 function renderSlider(products){
   const slider = document.getElementById('slider');
@@ -1049,9 +1057,6 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   }
 });
 
-/* ========== ІНІЦИАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
-
-/* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
 const catNext = document.getElementById('catNext');
 const tabsTrack = document.getElementById('tabs');
@@ -1076,7 +1081,6 @@ tabsTrack?.addEventListener('wheel', (e)=>{
 });
 window.addEventListener('resize', ()=> setTimeout(updateCategoryArrows, 80));
 
-/* Skeleton loader */
 function showSkeletons(count = 8){
   try{
     const wrap = document.getElementById('products');
@@ -1100,7 +1104,6 @@ function showSkeletons(count = 8){
 }
 showSkeletons();
 
-/* ========== RANDOM DISH (использует allProducts) ========== */
 function renderRandomDishCard(product){
   const container = document.getElementById('randomContainer');
   container.innerHTML = '';
@@ -1150,12 +1153,9 @@ function showRandomDish(){
   renderRandomDishCard(product);
 }
 
-// привязка кнопки
 document.getElementById('randomBtn')?.addEventListener('click', ()=>{
   showRandomDish();
 });
-
-/* ========== ИНИЦИАЛИЗАЦИЯ ========== */
 updateCategoryArrows();
 updateCartUI();
 loadMenu();
