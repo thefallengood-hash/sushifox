@@ -370,6 +370,27 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   margin:16px 0;
 }
 #menuSearch::placeholder { color: rgba(230,238,246,0.5); }
+
+/* ================== PRODUCT DETAIL MODAL ================== */
+/* minimal styles for modal with product details + similar items */
+#productModal{ display:none; position:fixed; inset:0; background:rgba(2,6,23,.6); z-index:1200; align-items:center; justify-content:center; padding:20px; }
+#productModal.open{ display:flex; }
+#productModal .modal-card{ background:#fff; color:#0b1220; border-radius:12px; max-width:980px; width:100%; display:grid; grid-template-columns:1fr 340px; gap:16px; padding:16px; box-shadow:0 30px 60px rgba(2,6,23,.3); position:relative; }
+@media(max-width:900px){ #productModal .modal-card{ grid-template-columns:1fr; } }
+#productModal .pm-left img{ width:100%; height:360px; object-fit:cover; border-radius:10px; display:block; }
+#productModal .pm-right{ display:flex; flex-direction:column; gap:10px; }
+#productModal .pm-name{ font-size:20px; font-weight:800; color:var(--accent); margin:0; }
+#productModal .pm-desc{ color:#333; font-size:14px; line-height:1.4; }
+#productModal .pm-price{ font-weight:900; font-size:18px; color:var(--accent); margin-top:6px; }
+#productModal .close-btn-modal{ position:absolute; top:10px; right:12px; background:none; border:none; font-size:22px; cursor:pointer; color:#333; }
+#productModal .similar-list{ display:flex; flex-direction:column; gap:8px; margin-top:8px; max-height:320px; overflow:auto; padding-right:6px; }
+.similar-item{ display:flex; gap:8px; align-items:center; padding:8px; border-radius:8px; background:#fafafa; cursor:pointer; }
+.similar-item img{ width:64px; height:64px; object-fit:cover; border-radius:8px; }
+.similar-item .sim-meta{ font-size:13px; color:#0b1220; }
+
+/* small adjustments for buttons inside modal */
+#productModal .btn { margin-top:8px; width:100%; }
+#productModal .pm-right .btn-inline { width:auto; display:inline-block; }
 </style>
 </head>
 <body>
@@ -410,7 +431,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 
       <div class="section">
         <div class="slider-container" id="sliderBlock">
-          <!-- Заменено на глобальный слайдер: главный слайд + миниатюры -->
           <img id="mainSlide" src="images/slide1.jpg" alt="Slide" />
           <div class="thumbs-row">
             <div id="thumbs" aria-hidden="true"></div>
@@ -418,7 +438,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
         </div>
       </div>
 
-      <!-- SEARCH: добавлено перед продуктами -->
       <div class="section">
         <input id="menuSearch" placeholder="Пошук по меню (назва, опис, ID)..." aria-label="Пошук по меню" />
       </div>
@@ -428,7 +447,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       </div>
     </div>
 
-    <!-- ===== Random view (центрированный) ===== -->
     <div id="randomView" class="spa-view" style="display:none;">
       <div class="random-inner">
         <h2>🎲 Рандомне блюдо</h2>
@@ -484,10 +502,8 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   </div>
 </div>
 
-<!-- Cart FAB (плавающая кнопка) -->
 <div class="cart-fab" id="openCart" title="Кошик">🛒<div class="cart-count" id="cartCount">0</div></div>
 
-<!-- SLIDE-IN CART PANEL + OVERLAY -->
 <div id="cartOverlay" aria-hidden="true"></div>
 
 <aside id="cartPanel" aria-hidden="true" role="dialog" aria-label="Кошик">
@@ -497,7 +513,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   </div>
 
   <div id="cartPanelItems" aria-live="polite">
-    <!-- Элементы корзины будут добавлены сюда -->
   </div>
 
   <div id="cartPanelFooter">
@@ -507,7 +522,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
         <span id="cartPanelTotal" style="font-weight:900;color:var(--accent)">0₴</span>
       </div>
 
-      <!-- === Здесь добавлены поля: Имя, Телефон, Адрес, Комментарий === -->
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
         <input id="custName" class="input" placeholder="Ім'я *" />
         <input id="custPhone" class="input" placeholder="Телефон *" />
@@ -515,7 +529,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
         <textarea id="custNote" class="input" placeholder="Коментар до замовлення" rows="3"></textarea>
       </div>
 
-      <!-- Оставляем форму/кнопки заказа в панеле (но основная обработка использует существующий checkoutOrder id) -->
       <button id="checkoutOrder" class="btn btn-checkout" style="background:linear-gradient(120deg,var(--accent),#ffb347);color:#fff">Оформити замовлення</button>
       <div id="orderResult" style="font-weight:700;margin-top:8px;color:#333"></div>
     </div>
@@ -525,8 +538,32 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 <!-- Mini lightbox clone -->
 <img id="miniLightboxImg" alt="" />
 
+<!-- === PRODUCT DETAIL MODAL (inserted) === -->
+<div id="productModal" role="dialog" aria-hidden="true" aria-label="Деталі товару">
+  <div class="modal-card" role="document">
+    <button class="close-btn-modal" id="pmClose" aria-label="Закрити">✕</button>
+
+    <div class="pm-left">
+      <img id="pmImg" src="" alt="Зображення товару" />
+    </div>
+
+    <div class="pm-right">
+      <h3 class="pm-name" id="pmName"></h3>
+      <div class="pm-desc" id="pmDesc"></div>
+      <div class="pm-price" id="pmPrice"></div>
+
+      <div>
+        <button id="pmAdd" class="btn btn-inline">Додати в кошик</button>
+      </div>
+
+      <h4 style="margin-top:12px">Похожі товари</h4>
+      <div id="pmSimilar" class="similar-list" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+<!-- === END PRODUCT DETAIL MODAL === -->
+
 <script>
-/* ========== SPA навигация (не меняет логику, просто переключает views) ========== */
 (function initSPA(){
   const mainTabs = document.querySelectorAll('#mainTabs .tab');
   const views = {
@@ -541,34 +578,25 @@ h1{margin:0;font-size:22px;color:var(--accent)}
       tab.classList.add('active');
       const view = tab.getAttribute('data-view');
       Object.keys(views).forEach(v => { views[v].style.display = (v===view ? 'block' : 'none'); });
-      // если показали меню — захотим перерендерить/инициализировать слайдер (если уже загружено)
       if(view === 'menu') {
         try { if(typeof renderSlider === 'function') renderSlider(window.lastRenderedProducts); } catch(e){ /* пусто */ }
         setTimeout(updateCategoryArrows, 120);
       }
-      // если открыли рандом — ничего особого не нужно (данные подгружаются глобально)
     });
   });
 })();
 
-/* ========== ТОТ ЖЕ JS (с фильтром категорий) ========== */
-/* ========== КОНФІГ ========== */
 const MENU_API = '/.netlify/functions/menu';
 const ORDER_API = '/.netlify/functions/order';
 const LIQPAY_API = '/.netlify/functions/liqpay';
 const IMG_FALLBACK = '/images/noimage.png';
 
-/* ====== GLOBAL SLIDER IMAGES ====== */
-/* Тут добавляй свои фото для глобального слайдера.
-   Путь — относительно проекта, например: "images/slide1.jpg" */
 const slidesImages = [
   "images/slide1.jpg",
   "images/slide2.jpg",
   "images/slide3.jpg"
 ];
 
-/* ====== GLOBAL SLIDER IMPLEMENTATION ====== */
-/* (эта реализация совместима с существующими вызовами renderSlider(prods)) */
 let sliderInterval = null;
 let sliderIndex = 0;
 
@@ -577,17 +605,13 @@ function renderSlider(/* products ignored — global slider */){
   const thumbsContainer = document.getElementById('thumbs');
   if(!main || !thumbsContainer) return;
 
-  // если слайды не заданы — fallback
   const slides = Array.isArray(slidesImages) && slidesImages.length ? slidesImages : ["images/placeholder1.jpg"];
 
-  // нормализуем индекс
   if(sliderIndex >= slides.length) sliderIndex = 0;
   if(sliderIndex < 0) sliderIndex = 0;
 
-  // главный слайд
   main.src = slides[sliderIndex];
 
-  // миниатюры
   thumbsContainer.innerHTML = '';
   slides.forEach((src, i) => {
     const img = document.createElement('img');
@@ -602,10 +626,8 @@ function renderSlider(/* products ignored — global slider */){
     thumbsContainer.appendChild(img);
   });
 
-  // lightbox для main и миниатюр
   initSliderLightbox();
 
-  // автопрокрутка 10 секунд
   resetSliderInterval();
 }
 
@@ -629,28 +651,23 @@ function resetSliderInterval(){
 }
 
 function initSliderLightbox(){
-  // main image lightbox
   const main = document.getElementById('mainSlide');
   if(main){
     main.onclick = ()=> openLightbox(main);
   }
-  // thumbs lightbox
   document.querySelectorAll('#thumbs img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
   });
 }
 
-/* ========== BADGE CONFIG ========== */
 const popularIds = ['87','88']; // популярные товары
 const newIds = ['86','88','85','87'];     // новинки
 
-/* ========== СТЕЙТ ========== */
 let allProducts = [];
 let categories = [];
 let currentCategory = null;
 let cart = JSON.parse(localStorage.getItem('sushi_cart') || '[]');
 
-/* ========== УТИЛІТИ ========== */
 function formatUAH(n){ return Math.round(n) + '₴'; }
 function safeImg(url){ return url ? url : IMG_FALLBACK; }
 function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -673,7 +690,6 @@ function getBadgesHtml(p){
   }
 }
 
-/* ========== ЗАВАНТАЖЕННЯ МЕНЮ ========== */
 async function loadMenu(){
   try{
     const res = await fetch(MENU_API);
@@ -728,13 +744,7 @@ async function loadMenu(){
   }
 }
 
-/* ========== ORDERED CATEGORIES (пример: ты добавляешь сюда порядок по id) ========== */
-/* Добавь сюда нужный порядок для каждой категории.
-   Ключ — точное имя категории (как приходит в data.categories / p.category).
-   Значение — массив id-строк в том порядке, в котором ты хочешь отображать товары.
-*/
 const categoryOrder = {
-  // пример (замени на свои id'шки)
   "Сети": ["98","110","113","119","122","124","129","132","137","140","141","146","151","152","158","159","160","161"],
   "Фірмові Дракони": ["85","86","87","88"],
   "Класичні роли": ["9","46","50","54","55","59","60","65","66","69","70","71","72","73","74","75","76","80"],
@@ -746,14 +756,12 @@ const categoryOrder = {
   "Суші": ["37","38","39","40","41","42"]
 };
 
-/* helper to apply explicit order inside a category */
 function applyCategoryOrder(products, categoryName){
   try {
     const orderArr = Array.isArray(categoryOrder[categoryName]) ? categoryOrder[categoryName].map(String) : null;
-    if(!orderArr || !orderArr.length) return products; // нет явного порядка — вернуть как есть
+    if(!orderArr || !orderArr.length) return products; 
 
-    // Сделаем быстрый поиск: id -> product
-    const remaining = products.slice(); // копия в исходном порядке
+    const remaining = products.slice(); 
     const ordered = [];
 
     orderArr.forEach(id => {
@@ -761,7 +769,7 @@ function applyCategoryOrder(products, categoryName){
         if(getProductId(remaining[i]) === String(id)){
           ordered.push(remaining[i]);
           remaining.splice(i,1);
-          i--; // скорректируем индекс после удаления
+          i--; 
         }
       }
     });
@@ -773,14 +781,13 @@ function applyCategoryOrder(products, categoryName){
   }
 }
 
-/* ========== КАТЕГОРІЇ ========== */
 function renderCategories(){
   const tabs = document.getElementById('tabs'); 
   if(!tabs) return; 
   tabs.innerHTML='';
 
   categories
-    .filter(cat => cat !== "Що треба рекомендувати та знижки!") // 🔥 убираем лишнюю категорию
+    .filter(cat => cat !== "Що треба рекомендувати та знижки!") 
     .forEach(cat=>{
       const el = document.createElement('div'); 
       el.className='tab'; 
@@ -792,7 +799,6 @@ function renderCategories(){
   updateCategoryArrows();
 }
 
-/* ========== ПОКАЗ КАТЕГОРІЇ ========== */
 function showCategory(cat){
   currentCategory = cat;
   document.querySelectorAll('#tabs .tab').forEach(t=> 
@@ -807,17 +813,14 @@ function showCategory(cat){
   renderSlider && renderSlider(prods);
   window.lastRenderedProducts = prods;
 
-  // применяем фильтр поиска (если есть)
   applySearchFilter();
 }
 
-/* ========== РЕНДЕР ПРОДУКТІВ ========== */
 function renderProducts(products){
   const wrap = document.getElementById('products'); if(!wrap) return; wrap.innerHTML = '';
   if(!products.length){ wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; return; }
   products.forEach(p=>{
     const card = document.createElement('div'); 
-    // Добавляем класс product-item и data-* для поиска
     card.className = 'card product-item';
     card.setAttribute('data-name', (p.name||'').toLowerCase());
     card.setAttribute('data-desc', (p.desc||'').toLowerCase());
@@ -842,11 +845,9 @@ function renderProducts(products){
   });
   initProductLightbox();
 
-  // если поисковая строка содержит текст — применим фильтр
   applySearchFilter();
 }
 
-/* ========== SEARCH ========== */
 function applySearchFilter(){
   const input = document.getElementById('menuSearch');
   if(!input) return;
@@ -866,7 +867,6 @@ function applySearchFilter(){
     if(match) anyVisible = true;
   });
 
-  // Если ничего не найдено — можно показать сообщение (не удаляет DOM)
   const wrap = document.getElementById('products');
   if(wrap){
     let noneEl = document.getElementById('noSearchResults');
@@ -887,7 +887,6 @@ function applySearchFilter(){
 
 document.getElementById('menuSearch')?.addEventListener('input', applySearchFilter);
 
-/* ========== МІНІ-ЛАЙТБОКС ========== */
 function initProductLightbox(){
   document.querySelectorAll('.product-img, #mainSlide, #thumbs img').forEach(img=>{
     img.onclick = ()=> openLightbox(img);
@@ -917,7 +916,114 @@ function openLightbox(imgEl){
   window._miniLb = { close };
 }
 
-/* ========== КОШИК ========== */
+/* ================== PRODUCT DETAIL MODAL JS ================== */
+/* Event delegation: open modal when clicking on card (.product-item) */
+(function initProductModalHandlers(){
+  const productsWrap = document.getElementById('products');
+  const modal = document.getElementById('productModal');
+  const pmClose = document.getElementById('pmClose');
+  const pmImg = document.getElementById('pmImg');
+  const pmName = document.getElementById('pmName');
+  const pmDesc = document.getElementById('pmDesc');
+  const pmPrice = document.getElementById('pmPrice');
+  const pmSimilar = document.getElementById('pmSimilar');
+  const pmAdd = document.getElementById('pmAdd');
+
+  function closeModal(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    document.removeEventListener('keydown', escHandler);
+  }
+  function openModal(){
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', escHandler);
+  }
+  function escHandler(e){ if(e.key === 'Escape') closeModal(); }
+
+  pmClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e)=>{
+    if(e.target === modal) closeModal();
+  });
+
+  // click on product card (event delegation)
+  productsWrap?.addEventListener('click', (e)=>{
+    const card = e.target.closest && e.target.closest('.product-item');
+    if(!card) return;
+    const id = String(card.getAttribute('data-id') || '');
+    if(!id) return;
+    const product = allProducts.find(p => getProductId(p) === id);
+    if(!product) return;
+    showProductDetails(product);
+  });
+
+  // Show modal with product object from allProducts
+  function showProductDetails(product){
+    if(!product) return;
+    pmImg.src = safeImg(product.img);
+    pmImg.alt = product.name || 'Товар';
+    pmName.textContent = product.name || '';
+    pmDesc.textContent = product.desc || product.ingredients || '';
+    pmPrice.textContent = (typeof product.price !== 'undefined') ? formatUAH(product.price) : '';
+
+    // attach add to cart
+    pmAdd.onclick = (ev) => {
+      try{
+        addToCartFromProduct(product);
+        // небольшая подсказка перед закрытием
+        pmAdd.textContent = 'Додано ✅';
+        setTimeout(()=> { pmAdd.textContent = 'Додати в кошик'; }, 900);
+      }catch(err){ console.error('pmAdd error', err); }
+    };
+
+    // build similar products: prefer same category, exclude current
+    pmSimilar.innerHTML = '';
+    let pool = allProducts.filter(p => getProductId(p) !== getProductId(product));
+    const sameCat = pool.filter(p => (p.category || '') === (product.category || ''));
+    if(sameCat.length >= 3) pool = sameCat;
+    // shuffle and take up to 3
+    for(let i = pool.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const chosen = pool.slice(0,3);
+    if(chosen.length === 0){
+      const noEl = document.createElement('div');
+      noEl.style.color = 'var(--muted)';
+      noEl.textContent = 'Немає схожих товарів';
+      pmSimilar.appendChild(noEl);
+    } else {
+      chosen.forEach(sp=>{
+        const div = document.createElement('div');
+        div.className = 'similar-item';
+        div.setAttribute('data-id', getProductId(sp));
+        div.innerHTML = `<img src="${safeImg(sp.img)}" alt="${escapeHtml(sp.name)}"><div class="sim-meta"><div>${escapeHtml(sp.name)}</div><div style="color:var(--muted);font-weight:700">${formatUAH(sp.price)}</div></div>`;
+        div.addEventListener('click', ()=> {
+          showProductDetails(sp); // recurse to show selected similar product
+          // scroll modal to top for better UX on mobile
+          const modalCard = modal.querySelector('.modal-card');
+          modalCard && modalCard.scrollIntoView({behavior:'smooth', block:'center'});
+        });
+        pmSimilar.appendChild(div);
+      });
+    }
+
+    openModal();
+  }
+
+  // expose function for other parts if needed
+  window.showProductDetails = function(productIdOrObj){
+    if(!productIdOrObj) return;
+    if(typeof productIdOrObj === 'object') return showProductDetails(productIdOrObj);
+    const id = String(productIdOrObj);
+    const product = allProducts.find(p => getProductId(p) === id);
+    if(product) showProductDetails(product);
+  };
+})();
+/* ================== END PRODUCT DETAIL MODAL JS ================== */
+
 function addToCartFromProduct(p){
   const id = p.id || p.product_id || p.name;
   const existing = cart.find(c=>c.id === id);
@@ -927,12 +1033,10 @@ function addToCartFromProduct(p){
 }
 function saveCart(){ localStorage.setItem('sushi_cart', JSON.stringify(cart)); }
 
-/* Обновлённый updateCartUI: обновляет панель и плавающую кнопку */
 function updateCartUI(){
   // обновляем счётчик на FAB
   if(document.getElementById('cartCount')) document.getElementById('cartCount').textContent = cart.reduce((a,c)=>a+c.qty,0);
 
-  // обновляем старый список (если есть)
   const listEl = document.getElementById('cartList'); if(listEl) listEl.innerHTML = '';
   cart.forEach((c,i)=>{
     if(listEl){
@@ -954,7 +1058,6 @@ function updateCartUI(){
     }
   });
 
-  // обновляем панель (новая)
   const panelItems = document.getElementById('cartPanelItems');
   if(panelItems) panelItems.innerHTML = '';
   cart.forEach((c,i)=>{
@@ -975,7 +1078,6 @@ function updateCartUI(){
     panelItems.appendChild(item);
   });
 
-  // навесь event listeners для иконок (кол-во/удаление)
   document.querySelectorAll('.icon-btn').forEach(btn=>{
     btn.onclick = ()=>{
       const idx = Number(btn.getAttribute('data-idx'));
@@ -986,13 +1088,11 @@ function updateCartUI(){
     };
   });
 
-  // общая сумма — обновляем везде
   const total = cart.reduce((a,c)=>a + c.price*c.qty,0);
   if(document.getElementById('cartTotal')) document.getElementById('cartTotal').textContent = formatUAH(total);
   if(document.getElementById('cartPanelTotal')) document.getElementById('cartPanelTotal').textContent = formatUAH(total);
 }
 
-/* ========== ОТКРЫТИЕ/ЗАКРЫТИЕ ПАНЕЛИ ========== */
 const cartOverlay = document.getElementById('cartOverlay');
 const cartPanel = document.getElementById('cartPanel');
 const openCartBtn = document.getElementById('openCart');
@@ -1004,7 +1104,6 @@ function openCartPanel(){
   cartPanel.setAttribute('aria-hidden','false');
   cartOverlay.setAttribute('aria-hidden','false');
   document.body.style.overflow = 'hidden';
-  // обновим UI перед показом
   updateCartUI();
 }
 function closeCartPanel(){
@@ -1020,8 +1119,6 @@ cartPanelClose?.addEventListener('click', closeCartPanel);
 cartOverlay?.addEventListener('click', closeCartPanel);
 document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPanel(); });
 
-/* ========== ПЕРЕТАСКИВАЕМАЯ КНОПКА КОРЗИНЫ (DRAGGABLE FAB) ========== */
-/* не использует localStorage, короткая, надёжная реализация на Pointer Events */
 (function makeFabDraggable(){
   const fab = document.getElementById('openCart');
   if(!fab) return;
@@ -1031,9 +1128,7 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
   let origLeft = 0, origTop = 0;
   let moved = false;
 
-  // pointerdown — начало перетаскивания
   fab.addEventListener('pointerdown', function (e) {
-    // только левой кнопкой/касанием
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.preventDefault();
     fab.setPointerCapture && fab.setPointerCapture(e.pointerId);
@@ -1044,17 +1139,13 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
     const rect = fab.getBoundingClientRect();
     origLeft = rect.left;
     origTop = rect.top;
-    // убираем переходы чтобы позиция двигалась чётко
     fab.style.transition = 'none';
-    // установим explicit left/top, чтобы перейти от right/bottom
     if (!fab.style.left) fab.style.left = rect.left + 'px';
     if (!fab.style.top) fab.style.top = rect.top + 'px';
-    // выключим right/bottom чтобы не конфликтовало
     fab.style.right = 'auto';
     fab.style.bottom = 'auto';
   });
 
-  // pointermove — двигаем
   document.addEventListener('pointermove', function (e) {
     if (!dragging) return;
     e.preventDefault();
@@ -1066,7 +1157,6 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
     const h = fab.offsetHeight;
     let left = origLeft + dx;
     let top = origTop + dy;
-    // ограничим в пределах окна с отступом 8px
     left = Math.max(8, Math.min(left, vw - w - 8));
     top = Math.max(8, Math.min(top, vh - h - 8));
     fab.style.left = left + 'px';
@@ -1074,26 +1164,20 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
     moved = moved || (Math.hypot(dx, dy) > 3);
   });
 
-  // завершение перетаскивания
   function endDrag(e) {
     if (!dragging) return;
     dragging = false;
     try { fab.releasePointerCapture && fab.releasePointerCapture(e && e.pointerId); } catch(err){}
-    // вернуть минимальную транзицию
     fab.style.transition = 'box-shadow .2s';
-    // если действительно перетаскивали — предотвратить последующий click
     if (moved) {
       const blocker = function (ev) { ev.stopImmediatePropagation(); ev.preventDefault(); };
-      // добавляем слушатель в capture, чтобы остановить click
       fab.addEventListener('click', blocker, true);
-      // удалим его через небольшой таймаут (после срабатывания click)
       setTimeout(()=> fab.removeEventListener('click', blocker, true), 300);
     }
   }
   document.addEventListener('pointerup', endDrag);
   document.addEventListener('pointercancel', endDrag);
 
-  // ресайз — если окно изменилась, скорректируем позицию чтобы элемент не оказался вне экрана
   window.addEventListener('resize', function(){
     const vw = window.innerWidth, vh = window.innerHeight;
     const w = fab.offsetWidth, h = fab.offsetHeight;
@@ -1106,8 +1190,6 @@ document.addEventListener('keydown', (e)=> { if(e.key === 'Escape') closeCartPan
   });
 })();
 
-/* ========== ОФОРМЛЕНИЕ ЗАМОВЛЕНИЯ ========== */
-/* оставил обработчик checkoutOrder — он использует текущую переменную cart и обновляет UI */
 document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   if(cart.length === 0){ alert('Кошик порожній'); return; }
   const name = document.getElementById('custName') ? document.getElementById('custName').value.trim() : '';
@@ -1167,9 +1249,6 @@ document.getElementById('checkoutOrder')?.addEventListener('click', async ()=>{
   }
 });
 
-/* ========== ІНІЦИАЛИЗАЦІЯ / ДОП. ЛОГІКА ========== */
-
-/* ========== CATEGORY SLIDER CONTROLS ========== */
 const catPrev = document.getElementById('catPrev');
 const catNext = document.getElementById('catNext');
 const tabsTrack = document.getElementById('tabs');
@@ -1194,7 +1273,6 @@ tabsTrack?.addEventListener('wheel', (e)=>{
 });
 window.addEventListener('resize', ()=> setTimeout(updateCategoryArrows, 80));
 
-/* Skeleton loader */
 function showSkeletons(count = 8){
   try{
     const wrap = document.getElementById('products');
@@ -1218,7 +1296,6 @@ function showSkeletons(count = 8){
 }
 showSkeletons();
 
-/* ========== RANDOM DISH (использует allProducts) ========== */
 function renderRandomDishCard(product){
   const container = document.getElementById('randomContainer');
   container.innerHTML = '';
@@ -1268,12 +1345,10 @@ function showRandomDish(){
   renderRandomDishCard(product);
 }
 
-// привязка кнопки
 document.getElementById('randomBtn')?.addEventListener('click', ()=>{
   showRandomDish();
 });
 
-/* ========== ИНИЦИАЛИЗАЦИЯ ========== */
 updateCategoryArrows();
 updateCartUI();
 loadMenu();
