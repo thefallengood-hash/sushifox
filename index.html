@@ -1052,7 +1052,7 @@ document.getElementById('menuSearch')?.addEventListener('input', applySearchFilt
         const div = document.createElement('div');
         div.className = 'similar-item';
         div.setAttribute('data-id', getProductId(sp));
-        div.innerHTML = `<img src="${safeImg(sp.img)}" alt="${escapeHtml(sp.name)}"><div class="sim-meta"><div>${escapeHtml(sp.name)}</div><div style="color:var(--muted);font-weight:700">${formatUAH(sp.price)}</div></div>`;
+        div.innerHTML = `<img src="${safeImg(sp.img)}" alt="${escapeHtml(sp.name)}"><div class="sim-meta"><div>${escapeHtml(sp.name)}</div><div style="color:#f0630c;font-weight:700">${formatUAH(sp.price)}</div></div>`;
         div.addEventListener('click', ()=> {
           showProductDetails(sp); // recurse to show selected similar product
           // scroll modal to top for better UX on mobile
