@@ -904,9 +904,13 @@ function renderProducts(products){
           <button class="btn add-btn">В кошик</button>
         </div>
       </div>`;
-    card.querySelector('.add-btn').addEventListener('click', ()=> addToCartFromProduct(p));
-    wrap.appendChild(card);
-  });
+const addBtn = card.querySelector('.add-btn');
+addBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // останавливаем всплытие, чтобы не открывался лайтбокс
+  addToCartFromProduct(p);
+});
+
+wrap.appendChild(card);
   initProductLightbox();
 
   applySearchFilter();
