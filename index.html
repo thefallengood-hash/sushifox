@@ -881,8 +881,15 @@ function showCategory(cat){
 }
 
 function renderProducts(products){
-  const wrap = document.getElementById('products'); if(!wrap) return; wrap.innerHTML = '';
-  if(!products.length){ wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; return; }
+  const wrap = document.getElementById('products'); 
+  if(!wrap) return; 
+  wrap.innerHTML = '';
+
+  if(!products.length){ 
+    wrap.innerHTML = '<div style="padding:18px;color:var(--muted)">Немає товарів у цій категорії</div>'; 
+    return; 
+  }
+
   products.forEach(p=>{
     const card = document.createElement('div'); 
     card.className = 'card product-item';
@@ -904,17 +911,24 @@ function renderProducts(products){
           <button class="btn add-btn">В кошик</button>
         </div>
       </div>`;
-const addBtn = card.querySelector('.add-btn');
-addBtn.addEventListener('click', (e) => {
-  e.stopPropagation(); // останавливаем всплытие, чтобы не открывался лайтбокс
-  addToCartFromProduct(p);
-});
 
-wrap.appendChild(card);
+    // клик по кнопке добавления в корзину — без открытия лайтбокса
+    const addBtn = card.querySelector('.add-btn');
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // предотвращаем всплытие клик-события
+      addToCartFromProduct(p);
+    });
+
+    wrap.appendChild(card);
+  });
+
+  // лайтбокс для картинок
   initProductLightbox();
 
+  // фильтр поиска
   applySearchFilter();
 }
+
 
 function applySearchFilter(){
   const input = document.getElementById('menuSearch');
