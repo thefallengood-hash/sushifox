@@ -751,59 +751,66 @@ function getBadgesHtml(p){
   }
 }
 
-async function loadMenu(){
-  try{
-    const res = await fetch(MENU_API);
-    if(!res.ok) throw new Error('Не вдалося завантажити меню з сервера');
-    const data = await res.json();
+try {
+  if(rawCategories && rawCategories.length && allProducts && allProducts.length) {
 
-    if (data?.products && Array.isArray(data.products)) {
-      allProducts = data.products;
+    // фильтруем категории
+    categories = rawCategories.filter(cat => {
+      try {
+        const norm = String(cat).trim().toLowerCase();
+        if(norm === 'комплектація') return true;
+        return allProducts.some(p => {
+          const pCat = (p.category || 'Інше');
+          return String(pCat) === String(cat) && Number(p.price) > 0;
+        });
+      } catch(e) { return false; }
+    });
 
-      const rawCategories = Array.isArray(data.categories) && data.categories.length
-        ? data.categories
-        : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
-
-      // ФИЛЬТР: убираем категории без товаров с ценой > 0, но оставляем "Комплектація"
-      categories = rawCategories.filter(cat=>{
-        try {
-          const norm = String(cat).trim().toLowerCase();
-          if(norm === 'комплектація') return true;
-          return allProducts.some(p => {
-            const pCat = (p.category || 'Інше');
-            return String(pCat) === String(cat) && Number(p.price) > 0;
-          });
-        } catch(e) { return false; }
-      });
-
-      if(!categories.length){
-        const nonZeroCats = Array.from(new Set(allProducts.filter(p=>Number(p.price)>0).map(p=>p.category || 'Інше')));
-        categories = nonZeroCats.length ? nonZeroCats : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
-      }
-
-    } else {
-      allProducts = [];
-      categories = [];
-      console.warn('menu: отримано порожнi дані');
-    }
-    renderCategories();
-
-    if(categories.length){
-      if(!currentCategory || !categories.includes(currentCategory)){
-        showCategory(categories[0]);
-      } else {
-        showCategory(currentCategory);
-      }
-    } else {
-      document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
+    // если нет категорий с товарами
+    if(!categories.length){
+      const nonZeroCats = Array.from(new Set(
+        allProducts.filter(p=>Number(p.price)>0).map(p=>p.category || 'Інше')
+      ));
+      categories = nonZeroCats.length ? nonZeroCats : Array.from(new Set(allProducts.map(p=>p.category || 'Інше')));
     }
 
-    setTimeout(updateCategoryArrows, 120);
-  } catch(err){
-    console.error('loadMenu error', err);
-    document.getElementById('products').innerHTML = `<div style="padding:20px;color:var(--muted)">Помилка при завантаженні меню</div>`;
+  } else {
+    allProducts = [];
+    categories = [];
+    console.warn('menu: отримано порожнi дані');
+  }
+
+  // рендерим категории
+  renderCategories();
+
+  // выбираем категорию для показа
+  if(categories.length){
+    const catToShow = (!currentCategory || !categories.includes(currentCategory))
+      ? categories[0] // первая категория
+      : currentCategory;
+
+    // проверяем, что контейнер для товаров существует
+    const productsEl = document.getElementById('products');
+    if(productsEl){
+      showCategory(catToShow);
+    } else {
+      // если контейнера ещё нет — ждем немного
+      setTimeout(()=> showCategory(catToShow), 50);
+    }
+  } else {
+    document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
+  }
+
+  setTimeout(updateCategoryArrows, 120);
+
+} catch(err){
+  console.error('loadMenu error', err);
+  const productsEl = document.getElementById('products');
+  if(productsEl){
+    productsEl.innerHTML = `<div style="padding:20px;color:var(--muted)">Помилка при завантаженні меню</div>`;
   }
 }
+
 
 const categoryOrder = {
   "Сети": ["98","110","113","119","122","124","129","132","137","140","141","146","151","152","158","159","160","161"],
