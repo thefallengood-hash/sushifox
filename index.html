@@ -155,9 +155,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 .summary{background:#fafafa;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .input{width:100%;padding:10px;border-radius:8px;border:1px solid #e7e7e7}
 
-/* Mini lightbox */
-#miniLightboxImg{position:fixed;border-radius:12px;box-shadow:0 20px 50px rgba(2,6,23,.5);cursor:pointer;transition:transform .35s ease, opacity .2s ease;will-change:transform;z-index:200;display:none}
-
 /* Cart text override for modal */
 .sheet h3 { color: #000 !important; }
 .sheet label { color: #000 !important; font-weight:600; }
@@ -568,9 +565,6 @@ h1{margin:0;font-size:22px;color:var(--accent)}
   </div>
 </aside>
 
-<!-- Mini lightbox clone -->
-<img id="miniLightboxImg" alt="" />
-
 <!-- === PRODUCT DETAIL MODAL (inserted) === -->
 <div id="productModal" role="dialog" aria-hidden="true" aria-label="Деталі товару">
   <div class="modal-card" role="document">
@@ -966,38 +960,6 @@ function applySearchFilter(){
 }
 
 document.getElementById('menuSearch')?.addEventListener('input', applySearchFilter);
-
-/* ============ CHANGED: initProductLightbox only binds slider images (does NOT bind .product-img) ============ */
-function initProductLightbox(){
-  document.querySelectorAll('#mainSlide, #thumbs img').forEach(img=>{
-    img.onclick = ()=> openLightbox(img);
-  });
-}
-/* =============================================================================================================== */
-
-function openLightbox(imgEl){
-  if(window._miniLb){ window._miniLb.close(); }
-  const rect = imgEl.getBoundingClientRect();
-  const clone = imgEl.cloneNode();
-  clone.id = 'miniLightboxImg';
-  clone.style.position='fixed'; clone.style.top=rect.top+'px'; clone.style.left=rect.left+'px';
-  clone.style.width=rect.width+'px'; clone.style.height=rect.height+'px';
-  clone.style.transition='transform .35s ease, top .35s ease, left .35s ease, width .35s ease, height .35s ease, opacity .2s ease';
-  clone.style.transformOrigin='center center'; clone.style.borderRadius='12px'; clone.style.zIndex=9999; clone.style.cursor='pointer'; clone.style.objectFit='cover';
-  document.body.appendChild(clone);
-  const vw=window.innerWidth,vh=window.innerHeight; const maxW=vw*0.9,maxH=vh*0.9;
-  const scale=Math.min(1.8,maxW/rect.width,maxH/rect.height);
-  const centerX=rect.left+rect.width/2, centerY=rect.top+rect.height/2;
-  const dx=(vw/2)-centerX, dy=(vh/2)-centerY;
-  requestAnimationFrame(()=>{ clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`; clone.style.display='block'; });
-  function close(){ clone.style.transform='translate(0px, 0px) scale(1)'; setTimeout(()=> { if(clone.parentElement) clone.parentElement.removeChild(clone); }, 350); window._miniLb=null; document.removeEventListener('click', outsideHandler); window.removeEventListener('keydown', keyHandler); }
-  function outsideHandler(e){ if(e.target !== clone) close(); }
-  function keyHandler(e){ if(e.key === 'Escape') close(); }
-  clone.addEventListener('click', close);
-  setTimeout(()=>document.addEventListener('click', outsideHandler),0);
-  window.addEventListener('keydown', keyHandler);
-  window._miniLb = { close };
-}
 
 /* ================== PRODUCT DETAIL MODAL JS ================== */
 /* Event delegation: open modal when clicking on card (.product-item) */
