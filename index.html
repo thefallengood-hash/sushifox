@@ -641,19 +641,6 @@ function renderSlider(/* products ignored — global slider */){
 
   main.src = slides[sliderIndex];
 
-  thumbsContainer.innerHTML = '';
-  slides.forEach((src, i) => {
-    const img = document.createElement('img');
-    img.src = src;
-    img.alt = 'thumb-' + i;
-    if(i === sliderIndex) img.classList.add('active');
-    img.addEventListener('click', (e)=> {
-      sliderIndex = i;
-      updateMainSlide();
-      resetSliderInterval();
-    });
-    thumbsContainer.appendChild(img);
-  });
 
   initSliderLightbox();
 
