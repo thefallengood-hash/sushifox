@@ -588,6 +588,16 @@ h1{margin:0;font-size:22px;color:var(--accent)}
 </div>
 <!-- === END PRODUCT DETAIL MODAL === -->
 
+<style>
+/* картинка в модалке — как на карточках */
+#productModal .pm-left img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  cursor: pointer;
+}
+</style>
+
 <script>
 (function initSPA(){
   const mainTabs = document.querySelectorAll('#mainTabs .tab');
