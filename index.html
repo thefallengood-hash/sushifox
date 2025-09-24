@@ -751,63 +751,64 @@ function getBadgesHtml(p){
   }
 }
 
-async function loadMenu(){ 
-  try{ 
-    const res = await fetch(MENU_API); 
-    if(!res.ok) throw new Error('Не вдалося завантажити меню з сервера'); 
-    const data = await res.json(); 
-    if (data?.products && Array.isArray(data.products)) { 
-      allProducts = data.products; 
-      const rawCategories = Array.isArray(data.categories) && data.categories.length 
-        ? data.categories 
-        : Array.from(new Set(allProducts.map(p=>p.category || 'Інше'))); 
+async function loadMenu() {
+  try {
+    const res = await fetch(MENU_API);
+    if (!res.ok) throw new Error('Не вдалося завантажити меню з сервера');
+    const data = await res.json();
+
+    if (data?.products && Array.isArray(data.products)) {
+      allProducts = data.products;
+
+      const rawCategories = Array.isArray(data.categories) && data.categories.length
+        ? data.categories
+        : Array.from(new Set(allProducts.map(p => p.category || 'Інше')));
 
       // ФИЛЬТР: убираем категории без товаров с ценой > 0, но оставляем "Комплектація"
-      categories = rawCategories.filter(cat=>{
-        try { 
-          const norm = String(cat).trim().toLowerCase(); 
-          if(norm === 'комплектація') return true; 
-          return allProducts.some(p => { 
-            const pCat = (p.category || 'Інше'); 
-            return String(pCat) === String(cat) && Number(p.price) > 0; 
-          }); 
-        } catch(e) { return false; } 
-      }); 
+      categories = rawCategories.filter(cat => {
+        try {
+          const norm = String(cat).trim().toLowerCase();
+          if (norm === 'комплектація') return true;
+          return allProducts.some(p => {
+            const pCat = (p.category || 'Інше');
+            return String(pCat) === String(cat) && Number(p.price) > 0;
+          });
+        } catch (e) { return false; }
+      });
 
-      if(!categories.length){ 
-        const nonZeroCats = Array.from(new Set(allProducts.filter(p=>Number(p.price)>0).map(p=>p.category || 'Інше'))); 
-        categories = nonZeroCats.length ? nonZeroCats : Array.from(new Set(allProducts.map(p=>p.category || 'Інше'))); 
-      } 
+      if (!categories.length) {
+        const nonZeroCats = Array.from(new Set(allProducts.filter(p => Number(p.price) > 0).map(p => p.category || 'Інше')));
+        categories = nonZeroCats.length ? nonZeroCats : Array.from(new Set(allProducts.map(p => p.category || 'Інше')));
+      }
 
-    } else { 
-      allProducts = []; 
-      categories = []; 
-      console.warn('menu: отримано порожнi дані'); 
-    } 
+    } else {
+      allProducts = [];
+      categories = [];
+      console.warn('menu: отримано порожнi дані');
+    }
 
-    renderCategories(); 
+    renderCategories();
 
-    if(categories.length){ 
-      if(!currentCategory || !categories.includes(currentCategory)){ 
-        showCategory(categories[0]); 
-      } else { 
-        showCategory(currentCategory); 
-      } 
-    } else { 
-      document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>'; 
-    } 
+    if (categories.length) {
+      const initialCategory = !currentCategory || !categories.includes(currentCategory) ? categories[0] : currentCategory;
 
-    setTimeout(updateCategoryArrows, 120); 
-  } catch(err){ 
-    console.error('loadMenu error', err); 
-    document.getElementById('products').innerHTML = `<div style="padding:20px;color:var(--muted)">Помилка при завантаженні меню</div>`; 
-  } 
+      // Показываем категорию асинхронно, чтобы allProducts точно были готовы
+      setTimeout(() => {
+        showCategory(initialCategory);
+      }, 0);
+
+    } else {
+      document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
+    }
+
+    setTimeout(updateCategoryArrows, 120);
+
+  } catch (err) {
+    console.error('loadMenu error', err);
+    document.getElementById('products').innerHTML = `<div style="padding:20px;color:var(--muted)">Помилка при завантаженні меню</div>`;
+  }
 }
 
-// ======= вызываем меню сразу при открытии сайта =======
-document.addEventListener('DOMContentLoaded', () => {
-  loadMenu();
-});
 
 const categoryOrder = {
   "Сети": ["98","110","113","119","122","124","129","132","137","140","141","146","151","152","158","159","160","161"],
