@@ -786,25 +786,28 @@ async function loadMenu(){
       categories = [];
       console.warn('menu: отримано порожнi дані');
     }
+
+    // прогружаем категории на сайте
     renderCategories();
 
-  if(categories.length){
-  if(!currentCategory || !categories.includes(currentCategory)){
-    currentCategory = categories[0]; // присваиваем текущую категорию
-  }
-  showCategory(currentCategory);
-}
-
+    if(categories.length){
+      // если currentCategory не задана, сразу присваиваем первую категорию
+      if(!currentCategory || !categories.includes(currentCategory)){
+        currentCategory = categories[0];
+      }
+      showCategory(currentCategory); // сразу показываем выбранную категорию
     } else {
       document.getElementById('products').innerHTML = '<div style="padding:20px;color:var(--muted)">Меню порожнє</div>';
     }
 
     setTimeout(updateCategoryArrows, 120);
+
   } catch(err){
     console.error('loadMenu error', err);
     document.getElementById('products').innerHTML = `<div style="padding:20px;color:var(--muted)">Помилка при завантаженні меню</div>`;
   }
 }
+
 
 const categoryOrder = {
   "Сети": ["98","110","113","119","122","124","129","132","137","140","141","146","151","152","158","159","160","161"],
